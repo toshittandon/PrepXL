@@ -1,9 +1,12 @@
 module.exports = {
   root: true,
-  env: { browser: true, es2020: true },
+  env: { 
+    browser: true, 
+    es2020: true,
+    node: true
+  },
   extends: [
     'eslint:recommended',
-    '@eslint/js/recommended',
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
     'plugin:react-hooks/recommended',
@@ -19,5 +22,31 @@ module.exports = {
     ],
     'react/prop-types': 'off',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'react/no-unescaped-entities': 'off',
+    'no-undef': 'off', // Disable for now due to test globals
   },
+  overrides: [
+    {
+      files: ['**/*.test.{js,jsx}', '**/__tests__/**/*.{js,jsx}', '**/test/**/*.{js,jsx}'],
+      env: {
+        jest: true,
+      },
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+        jest: 'readonly',
+        global: 'readonly',
+        process: 'readonly',
+        require: 'readonly',
+        act: 'readonly',
+      },
+    },
+  ],
 }

@@ -65,7 +65,7 @@ describe('SignupSimple Page', () => {
     expect(screen.getByRole('heading', { name: 'Create Account' })).toBeInTheDocument();
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
     expect(screen.getByText('Continue with Google')).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('SignupSimple Page', () => {
     
     const nameInput = screen.getByLabelText(/full name/i);
     const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/^password$/i);
+    const passwordInput = screen.getAllByLabelText(/password/i)[0];
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
@@ -160,6 +160,19 @@ describe('SignupSimple Page', () => {
       <SignupSimple onSuccess={mockOnSuccess} onSwitchToLogin={mockOnSwitchToLogin} />
     );
     
+    // Get form fields and trigger blur to activate validation
+    const nameInput = screen.getByLabelText(/full name/i);
+    const emailInput = screen.getByLabelText(/email address/i);
+    const passwordInput = screen.getAllByLabelText(/password/i)[0];
+    
+    // Focus and blur fields to trigger validation
+    fireEvent.focus(nameInput);
+    fireEvent.blur(nameInput);
+    fireEvent.focus(emailInput);
+    fireEvent.blur(emailInput);
+    fireEvent.focus(passwordInput);
+    fireEvent.blur(passwordInput);
+    
     const submitButton = screen.getByRole('button', { name: /create account/i });
     fireEvent.click(submitButton);
 
@@ -175,7 +188,7 @@ describe('SignupSimple Page', () => {
       <SignupSimple onSuccess={mockOnSuccess} onSwitchToLogin={mockOnSwitchToLogin} />
     );
     
-    const passwordInput = screen.getByLabelText(/^password$/i);
+    const passwordInput = screen.getAllByLabelText(/password/i)[0];
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
 
     fireEvent.change(passwordInput, { target: { value: 'Password123' } });
