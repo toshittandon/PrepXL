@@ -1,0 +1,20 @@
+{
+  "$id": "user123",
+  "$createdAt": "2024-01-01T00:00:00.000Z",
+  "$updatedAt": "2024-01-01T00:00:00.000Z",
+  "name": "Test User",
+  "registration": "2024-01-01T00:00:00.000Z",
+  "status": true,
+  "labels": [],
+  "passwordUpdate": "2024-01-01T00:00:00.000Z",
+  "email": "test@example.com",
+  "phone": "",
+  "emailVerification": true,
+  "phoneVerification": false,
+  "prefs": {
+    "experienceLevel": "Mid-level",
+    "targetRole": "Software Engineer",
+    "targetIndustry": "Technology"
+  },
+  "accessedAt": "2024-01-01T00:00:00.000Z"
+}

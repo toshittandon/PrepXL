@@ -1,0 +1,27 @@
+{
+    "projectId": "687fe297003367d2ee4e",
+    "functions": [
+        {
+            "$id": "resume-analysis",
+            "name": "resume-analysis",
+            "runtime": "node-18.0",
+            "path": "functions/resume-analysis",
+            "entrypoint": "src/main.js",
+            "ignore": [
+                "node_modules",
+                ".npm"
+            ],
+            "execute": [
+                "any"
+            ],
+            "timeout": 15,
+            "variables": {
+                "APPWRITE_FUNCTION_ENDPOINT": "https://fra.cloud.appwrite.io/v1",
+                "APPWRITE_FUNCTION_PROJECT_ID": "687fe297003367d2ee4e",
+                "APPWRITE_DATABASE_ID": "687fe5e0002557f887a2",
+                "APPWRITE_RESUMES_COLLECTION_ID": "687fe7c10007c51a7c90",
+                "APPWRITE_STORAGE_BUCKET_ID": "687fe89800141b0620d3"
+            }
+        }
+    ]
+}

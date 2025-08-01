@@ -1,0 +1,8 @@
+{
+  "$id": "doc123",
+  "$collectionId": "collection123",
+  "$databaseId": "database123",
+  "$createdAt": "2024-01-15T10:00:00.000Z",
+  "$updatedAt": "2024-01-15T10:00:00.000Z",
+  "$permissions": ["read(\"user:user123\")", "write(\"user:user123\")"]
+}

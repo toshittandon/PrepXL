@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "data": {
+    "questionText": "Tell me about a challenging technical problem you solved recently. Walk me through your approach and the outcome.",
+    "category": "Technical",
+    "difficulty": "medium",
+    "expectedDuration": 300,
+    "hints": [
+      "Use the STAR method (Situation, Task, Action, Result)",
+      "Focus on your problem-solving process",
+      "Mention specific technologies or tools used",
+      "Discuss what you learned from the experience"
+    ]
+  }
+}

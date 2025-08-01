@@ -1,0 +1,61 @@
+{
+  "$id": "resume123",
+  "userId": "user123",
+  "fileId": "file123",
+  "fileName": "sample-resume.pdf",
+  "analysisResults": {
+    "atsKeywords": [
+      "JavaScript",
+      "React",
+      "Node.js",
+      "Python",
+      "AWS",
+      "Docker",
+      "Kubernetes",
+      "MongoDB",
+      "PostgreSQL",
+      "Git"
+    ],
+    "actionVerbs": [
+      "Developed",
+      "Implemented",
+      "Led",
+      "Optimized",
+      "Designed",
+      "Built",
+      "Managed",
+      "Created",
+      "Improved",
+      "Delivered"
+    ],
+    "quantificationSuggestions": [
+      "Add specific metrics to 'Led development team' - specify team size",
+      "Include percentage improvements for 'Optimized application performance'",
+      "Specify number of users for 'Designed user interface'",
+      "Add timeline information to project descriptions",
+      "Include cost savings or revenue impact where applicable"
+    ],
+    "overallScore": 82,
+    "recommendations": [
+      "Include more quantifiable achievements with specific numbers",
+      "Add more industry-specific keywords for better ATS compatibility",
+      "Mention specific technologies and frameworks used in each role",
+      "Include project outcomes and business impact",
+      "Add certifications or relevant training completed"
+    ],
+    "strengths": [
+      "Strong technical skill set with modern technologies",
+      "Good use of action verbs throughout the resume",
+      "Clear project descriptions with technical details",
+      "Relevant experience for target role"
+    ],
+    "weaknesses": [
+      "Limited quantification of achievements",
+      "Missing some key industry keywords",
+      "Could benefit from more specific project outcomes",
+      "Lacks mention of soft skills and leadership experience"
+    ]
+  },
+  "$createdAt": "2024-01-15T10:00:00.000Z",
+  "$updatedAt": "2024-01-15T10:05:00.000Z"
+}

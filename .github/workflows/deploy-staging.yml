@@ -1,0 +1,65 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm run test:run
+
+    - name: Build for staging
+      run: npm run build:staging
+      env:
+        VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
+        VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID_STAGING }}
+        VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID_STAGING }}
+        VITE_APPWRITE_USERS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_USERS_COLLECTION_ID_STAGING }}
+        VITE_APPWRITE_RESUMES_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_RESUMES_COLLECTION_ID_STAGING }}
+        VITE_APPWRITE_SESSIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_SESSIONS_COLLECTION_ID_STAGING }}
+        VITE_APPWRITE_INTERACTIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_INTERACTIONS_COLLECTION_ID_STAGING }}
+        VITE_APPWRITE_STORAGE_BUCKET_ID: ${{ secrets.VITE_APPWRITE_STORAGE_BUCKET_ID_STAGING }}
+        VITE_AI_API_BASE_URL: ${{ secrets.VITE_AI_API_BASE_URL_STAGING }}
+        VITE_AI_API_KEY: ${{ secrets.VITE_AI_API_KEY_STAGING }}
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID_STAGING }}
+        VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID_STAGING }}
+        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN_STAGING }}
+        VITE_GA_TRACKING_ID: ${{ secrets.VITE_GA_TRACKING_ID_STAGING }}
+
+    - name: Deploy to Vercel Preview
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./
+
+    - name: Comment PR with preview URL
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Staging deployment is ready! Preview your changes at the deployment URL.'
+          })

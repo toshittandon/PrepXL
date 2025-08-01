@@ -1,0 +1,13 @@
+{
+  "$id": "file123",
+  "bucketId": "resumes",
+  "name": "sample-resume.pdf",
+  "signature": "abc123def456",
+  "mimeType": "application/pdf",
+  "sizeOriginal": 1024576,
+  "chunksTotal": 1,
+  "chunksUploaded": 1,
+  "$createdAt": "2024-01-15T10:00:00.000Z",
+  "$updatedAt": "2024-01-15T10:00:00.000Z",
+  "$permissions": ["read(\"user:user123\")"]
+}

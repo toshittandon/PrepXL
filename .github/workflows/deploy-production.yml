@@ -1,0 +1,104 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy-vercel:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm run test:run
+
+    - name: Build for production
+      run: npm run build:production
+      env:
+        VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
+        VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
+        VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID }}
+        VITE_APPWRITE_USERS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_USERS_COLLECTION_ID }}
+        VITE_APPWRITE_RESUMES_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_RESUMES_COLLECTION_ID }}
+        VITE_APPWRITE_SESSIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_SESSIONS_COLLECTION_ID }}
+        VITE_APPWRITE_INTERACTIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_INTERACTIONS_COLLECTION_ID }}
+        VITE_APPWRITE_STORAGE_BUCKET_ID: ${{ secrets.VITE_APPWRITE_STORAGE_BUCKET_ID }}
+        VITE_AI_API_BASE_URL: ${{ secrets.VITE_AI_API_BASE_URL }}
+        VITE_AI_API_KEY: ${{ secrets.VITE_AI_API_KEY }}
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+        VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID }}
+        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        VITE_GA_TRACKING_ID: ${{ secrets.VITE_GA_TRACKING_ID }}
+
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: ./
+
+  deploy-netlify:
+    runs-on: ubuntu-latest
+    environment: production
+    if: false # Disable Netlify deployment by default, enable if needed
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build for production
+      run: npm run build:production
+      env:
+        VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
+        VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
+        VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID }}
+        VITE_APPWRITE_USERS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_USERS_COLLECTION_ID }}
+        VITE_APPWRITE_RESUMES_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_RESUMES_COLLECTION_ID }}
+        VITE_APPWRITE_SESSIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_SESSIONS_COLLECTION_ID }}
+        VITE_APPWRITE_INTERACTIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_INTERACTIONS_COLLECTION_ID }}
+        VITE_APPWRITE_STORAGE_BUCKET_ID: ${{ secrets.VITE_APPWRITE_STORAGE_BUCKET_ID }}
+        VITE_AI_API_BASE_URL: ${{ secrets.VITE_AI_API_BASE_URL }}
+        VITE_AI_API_KEY: ${{ secrets.VITE_AI_API_KEY }}
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+        VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID }}
+        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        VITE_GA_TRACKING_ID: ${{ secrets.VITE_GA_TRACKING_ID }}
+
+    - name: Deploy to Netlify
+      uses: nwtgck/actions-netlify@v3.0
+      with:
+        publish-dir: './dist'
+        production-branch: main
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        deploy-message: "Deploy from GitHub Actions"
+        enable-pull-request-comment: false
+        enable-commit-comment: true
+        overwrites-pull-request-comment: true
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
