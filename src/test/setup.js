@@ -4,6 +4,30 @@ import { vi } from 'vitest';
 // Mock Appwrite
 global.fetch = vi.fn();
 
+// Mock import.meta.env for tests
+Object.defineProperty(import.meta, 'env', {
+  value: {
+    DEV: false,
+    PROD: true,
+    VITE_AI_API_BASE_URL: 'https://api.test.com',
+    VITE_APPWRITE_ENDPOINT: 'https://test.appwrite.io/v1',
+    VITE_APPWRITE_PROJECT_ID: 'test-project-id',
+    VITE_APPWRITE_DATABASE_ID: 'test-database-id',
+    VITE_APPWRITE_USERS_COLLECTION_ID: 'test-users-collection',
+    VITE_APPWRITE_RESUMES_COLLECTION_ID: 'test-resumes-collection',
+    VITE_APPWRITE_SESSIONS_COLLECTION_ID: 'test-sessions-collection',
+    VITE_APPWRITE_INTERACTIONS_COLLECTION_ID: 'test-interactions-collection',
+    VITE_APPWRITE_STORAGE_BUCKET_ID: 'test-storage-bucket',
+    VITE_AI_API_KEY: 'test-api-key',
+    VITE_GOOGLE_CLIENT_ID: 'test-google-client-id',
+    VITE_LINKEDIN_CLIENT_ID: 'test-linkedin-client-id',
+    VITE_SENTRY_DSN: 'test-sentry-dsn',
+    VITE_GA_TRACKING_ID: 'test-ga-tracking-id'
+  },
+  writable: true,
+  configurable: true
+});
+
 // Mock console methods to reduce noise in tests
 global.console = {
   ...console,
