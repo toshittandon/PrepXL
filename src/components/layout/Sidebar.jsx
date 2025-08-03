@@ -1,188 +1,218 @@
-import { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+
+import { Link, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  HomeIcon,
-  DocumentTextIcon,
-  ChatBubbleLeftRightIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
+  Home,
+  FileText,
+  MessageSquare,
+  BookOpen,
+  Shield,
+  Settings,
+  X
+} from 'lucide-react'
+import { useSelector } from 'react-redux'
 
-const Sidebar = ({ 
-  isOpen, 
-  onClose, 
-  className = '',
-  variant = 'default' // 'default', 'compact', 'floating'
-}) => {
-  const location = useLocation();
+const Sidebar = ({ isOpen, onClose }) => {
+  const location = useLocation()
+  const { user } = useSelector((state) => state.auth)
 
-  const navigation = [
-    { 
-      name: 'Dashboard', 
-      href: '/dashboard', 
-      icon: HomeIcon,
-      description: 'Overview and quick actions'
-    },
-    { 
-      name: 'Resume Upload', 
-      href: '/resume/upload', 
-      icon: DocumentTextIcon,
-      description: 'Upload and analyze resumes'
-    },
-    { 
-      name: 'Interview Setup', 
-      href: '/interview/setup', 
-      icon: ChatBubbleLeftRightIcon,
-      description: 'Start practice interviews'
-    },
-    { 
-      name: 'Reports', 
-      href: '/reports', 
-      icon: ChartBarIcon,
-      description: 'View interview feedback'
-    },
-    { 
-      name: 'Settings', 
-      href: '/settings', 
-      icon: Cog6ToothIcon,
-      description: 'Account and preferences'
+  const navigationItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Resume Analysis', href: '/resume-upload', icon: FileText },
+    { name: 'Interview Practice', href: '/interview/setup', icon: MessageSquare },
+    { name: 'Q&A Library', href: '/library', icon: BookOpen },
+    { name: 'Profile Settings', href: '/profile/settings', icon: Settings },
+    ...(user?.profile?.isAdmin ? [{ name: 'Admin Dashboard', href: '/admin', icon: Shield }] : []),
+  ]
+
+  const isActiveRoute = (href) => {
+    if (href === '/dashboard') {
+      return location.pathname === '/dashboard'
     }
-  ];
+    return location.pathname.startsWith(href)
+  }
 
-  const isCurrentPath = (href) => {
-    return location.pathname === href || location.pathname.startsWith(href + '/');
-  };
-
-  const variants = {
-    default: {
-      container: 'bg-white border-r border-gray-200',
-      width: 'w-64',
-      padding: 'p-4'
+  const sidebarVariants = {
+    closed: {
+      x: '-100%',
+      transition: {
+        type: 'tween',
+        duration: 0.3
+      }
     },
-    compact: {
-      container: 'bg-gray-900 text-white',
-      width: 'w-16 lg:w-64',
-      padding: 'p-2 lg:p-4'
-    },
-    floating: {
-      container: 'bg-white shadow-lg rounded-lg border border-gray-200',
-      width: 'w-64',
-      padding: 'p-4 m-4'
+    open: {
+      x: 0,
+      transition: {
+        type: 'tween',
+        duration: 0.3
+      }
     }
-  };
+  }
 
-  const currentVariant = variants[variant];
+  const overlayVariants = {
+    closed: {
+      opacity: 0,
+      transition: {
+        duration: 0.3
+      }
+    },
+    open: {
+      opacity: 1,
+      transition: {
+        duration: 0.3
+      }
+    }
+  }
 
-  const sidebarContent = (
-    <div className={`
-      flex flex-col h-full ${currentVariant.container} ${currentVariant.padding}
-      ${className}
-    `}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">IP</span>
-            </div>
-          </div>
-          <div className={`ml-3 ${variant === 'compact' ? 'hidden lg:block' : ''}`}>
-            <h1 className="text-lg font-semibold text-gray-900">
-              InterviewPrep AI
-            </h1>
-          </div>
-        </div>
-        
-        {/* Close button for mobile */}
-        <button
-          onClick={onClose}
-          className="lg:hidden text-gray-400 hover:text-gray-600"
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-      </div>
+  const itemVariants = {
+    closed: {
+      opacity: 0,
+      x: -20
+    },
+    open: {
+      opacity: 1,
+      x: 0
+    }
+  }
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2">
-        {navigation.map((item) => {
-          const isActive = isCurrentPath(item.href);
-          
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              onClick={onClose} // Close sidebar on mobile when navigating
-              className={`
-                group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                ${isActive
-                  ? 'bg-blue-100 text-blue-900 border-r-2 border-blue-600'
-                  : variant === 'compact' && variant === 'compact'
-                    ? 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }
-              `}
-              title={variant === 'compact' ? item.name : undefined}
-            >
-              <item.icon className={`
-                flex-shrink-0 w-5 h-5
-                ${isActive 
-                  ? 'text-blue-600' 
-                  : variant === 'compact' 
-                    ? 'text-gray-400 group-hover:text-white' 
-                    : 'text-gray-400 group-hover:text-gray-600'
-                }
-                ${variant === 'compact' ? 'lg:mr-3' : 'mr-3'}
-              `} />
-              
-              <div className={variant === 'compact' ? 'hidden lg:block' : ''}>
-                <div className="font-medium">{item.name}</div>
-                {variant === 'default' && (
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {item.description}
-                  </div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className={`
-        border-t border-gray-200 pt-4 mt-4
-        ${variant === 'compact' ? 'hidden lg:block' : ''}
-      `}>
-        <div className="text-xs text-gray-500 text-center">
-          <p>© 2024 InterviewPrep AI</p>
-          <p className="mt-1">Version 1.0.0</p>
-        </div>
-      </div>
-    </div>
-  );
+  const containerVariants = {
+    closed: {
+      transition: {
+        staggerChildren: 0.05,
+        staggerDirection: -1
+      }
+    },
+    open: {
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  }
 
   return (
-    <>
-      {/* Mobile overlay */}
+    <AnimatePresence>
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      
-      {/* Sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 flex flex-col
-        ${currentVariant.width}
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:inset-0
-        transition-transform duration-300 ease-in-out
-      `}>
-        {sidebarContent}
-      </div>
-    </>
-  );
-};
+        <>
+          {/* Overlay */}
+          <motion.div
+            variants={overlayVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={onClose}
+          />
 
-export default Sidebar;
+          {/* Sidebar */}
+          <motion.div
+            variants={sidebarVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl z-50 md:hidden"
+          >
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">IP</span>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      InterviewPrep AI
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
+                      Complete
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* User Info */}
+              {user && (
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-medium text-sm">
+                        {user.name?.charAt(0)?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {user.profile?.isAdmin ? 'Administrator' : 'User'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation */}
+              <motion.nav 
+                variants={containerVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                className="flex-1 px-4 py-6 space-y-2"
+              >
+                {navigationItems.map((item, index) => {
+                  const Icon = item.icon
+                  const isActive = isActiveRoute(item.href)
+                  
+                  return (
+                    <motion.div
+                      key={item.name}
+                      variants={itemVariants}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <Link
+                        to={item.href}
+                        onClick={onClose}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                          isActive
+                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                        <span className="font-medium">{item.name}</span>
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeIndicator"
+                            className="ml-auto w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full"
+                          />
+                        )}
+                      </Link>
+                    </motion.div>
+                  )
+                })}
+              </motion.nav>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  InterviewPrep AI Complete
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-1">
+                  Version 1.0.0
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
+export default Sidebar

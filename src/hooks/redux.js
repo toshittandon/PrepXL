@@ -1,22 +1,24 @@
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux'
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch = () => useDispatch();
-export const useAppSelector = useSelector;
+// Typed hooks for Redux usage
+export const useAppDispatch = () => useDispatch()
+export const useAppSelector = useSelector
 
-// Custom hooks for auth state
-export const useAuth = () => {
-  return useAppSelector((state) => state.auth);
-};
+// Selector hooks for specific slices
+export const useAuth = () => useAppSelector(state => state.auth)
+export const useInterview = () => useAppSelector(state => state.interview)
+export const useResume = () => useAppSelector(state => state.resume)
+export const useLibrary = () => useAppSelector(state => state.library)
+export const useAdmin = () => useAppSelector(state => state.admin)
+export const useUI = () => useAppSelector(state => state.ui)
 
-export const useAuthUser = () => {
-  return useAppSelector((state) => state.auth.user);
-};
-
-export const useAuthStatus = () => {
-  return useAppSelector((state) => ({
-    isAuthenticated: state.auth.isAuthenticated,
-    isInitialized: state.auth.isInitialized,
-    loading: state.auth.loading,
-  }));
-};
+// Specific selector hooks for commonly used values
+export const useCurrentUser = () => useAppSelector(state => state.auth.user)
+export const useIsAuthenticated = () => useAppSelector(state => !!state.auth.user)
+export const useIsAdmin = () => useAppSelector(state => state.auth.user?.isAdmin || false)
+export const useTheme = () => useAppSelector(state => state.ui.theme)
+export const useCurrentSession = () => useAppSelector(state => state.interview.currentSession)
+export const useIsRecording = () => useAppSelector(state => state.interview.isRecording)
+export const useNotifications = () => useAppSelector(state => state.ui.notifications)
+export const useSidebarOpen = () => useAppSelector(state => state.ui.sidebarOpen)
+export const useCurrentModal = () => useAppSelector(state => state.ui.currentModal)

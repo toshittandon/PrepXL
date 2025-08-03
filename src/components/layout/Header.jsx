@@ -1,235 +1,187 @@
-import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Bars3Icon,
-  BellIcon,
-  UserCircleIcon,
-  ChevronDownIcon,
-  ArrowRightOnRectangleIcon,
-  Cog6ToothIcon
-} from '@heroicons/react/24/outline';
-import { logoutUser, selectUser } from '../../store/slices/authSlice';
-import { Button } from '../common';
+  Menu, 
+  X, 
+  User, 
+  Settings, 
+  LogOut, 
+  Shield,
+  Home,
+  FileText,
+  MessageSquare,
+  BookOpen
+} from 'lucide-react'
+import ThemeToggle from '../common/ThemeToggle'
+import { logout } from '../../store/slices/authSlice'
 
-const Header = ({ 
-  onMenuClick,
-  showMobileMenu = true,
-  variant = 'default', // 'default', 'minimal', 'dashboard'
-  className = ''
-}) => {
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const dispatch = useDispatch();
-  const user = useSelector(selectUser);
-  const location = useLocation();
+const Header = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const { user } = useSelector((state) => state.auth)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    setUserMenuOpen(false);
-  };
-
-  // Get page title based on current route
-  const getPageTitle = () => {
-    const path = location.pathname;
-    if (path.includes('/dashboard')) return 'Dashboard';
-    if (path.includes('/resume')) return 'Resume Analysis';
-    if (path.includes('/interview')) return 'Interview Practice';
-    if (path.includes('/reports')) return 'Reports';
-    if (path.includes('/settings')) return 'Settings';
-    return 'InterviewPrep AI';
-  };
-
-  const notifications = [
-    {
-      id: 1,
-      title: 'Interview completed',
-      message: 'Your technical interview session has been analyzed',
-      time: '5 minutes ago',
-      unread: true
-    },
-    {
-      id: 2,
-      title: 'Resume analysis ready',
-      message: 'Your resume analysis results are now available',
-      time: '1 hour ago',
-      unread: false
+  const handleLogout = async () => {
+    try {
+      // Call Appwrite logout service
+      const { logoutUser } = await import('../../services/appwrite/auth.js')
+      await logoutUser()
+      
+      // Clear Redux state
+      dispatch(logout())
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Still clear local state even if logout fails
+      dispatch(logout())
+      navigate('/login')
     }
-  ];
+  }
+
+  const navigationItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Resume Analysis', href: '/resume-upload', icon: FileText },
+    { name: 'Interview Practice', href: '/interview/setup', icon: MessageSquare },
+    { name: 'Q&A Library', href: '/library', icon: BookOpen },
+  ]
 
   const userMenuItems = [
-    { name: 'Profile', href: '/profile', icon: UserCircleIcon },
-    { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
-  ];
-
-  const variants = {
-    default: 'bg-white shadow-sm border-b border-gray-200',
-    minimal: 'bg-transparent',
-    dashboard: 'bg-white shadow-sm border-b border-gray-200'
-  };
+    { name: 'Profile Settings', href: '/profile/settings', icon: Settings },
+    ...(user?.profile?.isAdmin ? [{ name: 'Admin Dashboard', href: '/admin', icon: Shield }] : []),
+  ]
 
   return (
-    <header className={`
-      sticky top-0 z-30 ${variants[variant]} ${className}
-    `}>
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Left side */}
+    <header className="bg-white dark:bg-gray-900 shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo and Brand */}
           <div className="flex items-center">
-            {/* Mobile menu button */}
-            {showMobileMenu && (
-              <button
-                type="button"
-                className="text-gray-500 hover:text-gray-600 lg:hidden mr-4"
-                onClick={onMenuClick}
-              >
-                <Bars3Icon className="h-6 w-6" />
-              </button>
-            )}
-
-            {/* Page title */}
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">
-                {getPageTitle()}
-              </h1>
-              {variant === 'dashboard' && (
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Welcome back, {user?.name || 'there'}!
+            <Link 
+              to="/dashboard" 
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">IP</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  InterviewPrep AI
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
+                  Complete
                 </p>
-              )}
-            </div>
+              </div>
+            </Link>
           </div>
 
-          {/* Right side */}
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            {navigationItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{item.name}</span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                type="button"
-                className="text-gray-400 hover:text-gray-600 relative"
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-              >
-                <BellIcon className="h-6 w-6" />
-                {notifications.some(n => n.unread) && (
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
-                )}
-              </button>
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
-              {/* Notifications dropdown */}
-              {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+            {/* User Menu */}
+            {user && (
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
                   </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${
-                          notification.unread ? 'bg-blue-50' : ''
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {notification.time}
-                            </p>
-                          </div>
-                          {notification.unread && (
-                            <div className="w-2 h-2 bg-blue-600 rounded-full ml-2 mt-1"></div>
-                          )}
-                        </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {user.profile?.isAdmin ? 'Admin' : 'User'}
+                    </p>
+                  </div>
+                </button>
+
+                {/* User Dropdown Menu */}
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2"
+                      onMouseLeave={() => setIsUserMenuOpen(false)}
+                    >
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-200">
-                    <button className="text-sm text-blue-600 hover:text-blue-800">
-                      View all notifications
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* User menu */}
-            <div className="relative">
-              <button
-                type="button"
-                className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="hidden sm:block text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.name || user?.email || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {user?.email}
-                    </p>
-                  </div>
-                  <UserCircleIcon className="h-8 w-8 text-gray-400" />
-                  <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-                </div>
-              </button>
+                      {userMenuItems.map((item) => {
+                        const Icon = item.icon
+                        return (
+                          <Link
+                            key={item.name}
+                            to={item.href}
+                            className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            <Icon className="w-4 h-4" />
+                            <span>{item.name}</span>
+                          </Link>
+                        )
+                      })}
 
-              {/* User dropdown */}
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-200 sm:hidden">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.name || user?.email || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {user?.email}
-                    </p>
-                  </div>
-                  
-                  {userMenuItems.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <item.icon className="h-4 w-4 mr-3 text-gray-400" />
-                      {item.name}
-                    </Link>
-                  ))}
-                  
-                  <div className="border-t border-gray-200 mt-2 pt-2">
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3 text-gray-400" />
-                      Sign out
-                    </button>
-                  </div>
-                </div>
+                      <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={onMobileMenuToggle}
+              className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
               )}
-            </div>
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Click outside to close dropdowns */}
-      {(userMenuOpen || notificationsOpen) && (
-        <div 
-          className="fixed inset-0 z-20"
-          onClick={() => {
-            setUserMenuOpen(false);
-            setNotificationsOpen(false);
-          }}
-        />
-      )}
     </header>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

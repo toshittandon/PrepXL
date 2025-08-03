@@ -1,66 +1,78 @@
-import { forwardRef } from 'react';
-import LoadingSpinner from './LoadingSpinner';
+import { forwardRef } from 'react'
+import { motion } from 'framer-motion'
+import LoadingSpinner from './LoadingSpinner.jsx'
 
 const Button = forwardRef(({
   children,
   variant = 'primary',
-  size = 'medium',
+  size = 'md',
   loading = false,
   disabled = false,
-  fullWidth = false,
-  type = 'button',
   className = '',
+  type = 'button',
   onClick,
   ...props
 }, ref) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-  
+  const baseClasses = `
+    inline-flex items-center justify-center font-medium rounded-xl
+    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900
+    transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+  `
+
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-gray-500',
-    outline: 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 focus:ring-blue-500',
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-    success: 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500',
-    ghost: 'hover:bg-gray-100 text-gray-700 focus:ring-gray-500'
-  };
+    primary: `
+      bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800
+      text-white shadow-md hover:shadow-lg focus:ring-primary-500
+      disabled:from-primary-400 disabled:to-primary-500
+    `,
+    secondary: `
+      bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
+      text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700
+      shadow-sm hover:shadow-md focus:ring-primary-500
+    `,
+    danger: `
+      bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800
+      text-white shadow-md hover:shadow-lg focus:ring-red-500
+      disabled:from-red-400 disabled:to-red-500
+    `,
+    ghost: `
+      text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800
+      focus:ring-primary-500
+    `
+  }
 
   const sizes = {
-    small: 'px-3 py-1.5 text-sm',
-    medium: 'px-4 py-2 text-sm',
-    large: 'px-6 py-3 text-base'
-  };
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-6 py-3 text-base',
+    xl: 'px-8 py-4 text-lg'
+  }
 
-  const widthClass = fullWidth ? 'w-full' : '';
-  
-  const buttonClasses = `
-    ${baseClasses}
-    ${variants[variant]}
-    ${sizes[size]}
-    ${widthClass}
-    ${className}
-  `.trim();
-
-  const isDisabled = disabled || loading;
+  const isDisabled = disabled || loading
 
   return (
-    <button
+    <motion.button
       ref={ref}
       type={type}
-      className={buttonClasses}
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={isDisabled}
       onClick={onClick}
+      whileHover={!isDisabled ? { scale: 1.02 } : {}}
+      whileTap={!isDisabled ? { scale: 0.98 } : {}}
       {...props}
     >
       {loading && (
-        <LoadingSpinner size="sm" inline />
+        <LoadingSpinner 
+          size="sm" 
+          className="mr-2" 
+          color={variant === 'primary' || variant === 'danger' ? 'white' : 'current'}
+        />
       )}
-      <span className={loading ? 'ml-2' : ''}>
-        {children}
-      </span>
-    </button>
-  );
-});
+      {children}
+    </motion.button>
+  )
+})
 
-Button.displayName = 'Button';
+Button.displayName = 'Button'
 
-export default Button;
+export default Button

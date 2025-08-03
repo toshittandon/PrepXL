@@ -1,76 +1,145 @@
-import { useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import LoginForm from '../../components/forms/LoginForm';
-import OAuthButtons from '../../components/forms/OAuthButtons';
-import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import { useSelector } from 'react-redux'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { ArrowLeft } from 'lucide-react'
+import LoginForm from '../../components/forms/LoginForm.jsx'
+import OAuthButtons from '../../components/forms/OAuthButtons.jsx'
+import ErrorMessage from '../../components/common/ErrorMessage.jsx'
+import Card from '../../components/common/Card.jsx'
 
 const Login = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const { error } = useSelector((state) => state.auth)
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+  // Get the intended destination from location state
+  const from = location.state?.from || '/dashboard'
+
+  const handleLoginSuccess = (user) => {
+    // Check if user needs to complete profile setup
+    if (!user.profile?.targetRole || !user.profile?.targetIndustry) {
+      navigate('/profile/setup')
+    } else {
+      navigate(from, { replace: true })
     }
-  }, [isAuthenticated, navigate, location.state]);
-
-  const handleLoginSuccess = () => {
-    const from = location.state?.from?.pathname || '/dashboard';
-    navigate(from, { replace: true });
-  };
-
-  const handleSwitchToSignup = () => {
-    navigate('/auth/signup', { 
-      state: { from: location.state?.from },
-      replace: true 
-    });
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            InterviewPrep AI
-          </h1>
-          <p className="text-sm text-gray-600">
-            AI-powered interview preparation platform
+        {/* Back to Home Link */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mb-6"
+        >
+          <Link
+            to="/"
+            className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Link>
+        </motion.div>
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="text-center"
+        >
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Welcome Back
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Sign in to your InterviewPrep AI account
           </p>
-        </div>
+        </motion.div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <LoginForm 
-          onSuccess={handleLoginSuccess}
-          onSwitchToSignup={handleSwitchToSignup}
-        />
-        
-        <div className="mt-6">
-          <OAuthButtons 
-            successUrl={`${window.location.origin}/dashboard`}
-            failureUrl={`${window.location.origin}/auth/login?error=oauth_failed`}
-          />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Card className="py-8 px-4 shadow-xl sm:px-10">
+            {/* Development Helper */}
+            {import.meta.env.VITE_MOCK_AUTH === 'true' && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                  Development Mode - Mock Authentication
+                </h3>
+                <div className="text-xs text-blue-600 dark:text-blue-300 space-y-1">
+                  <p><strong>Admin:</strong> admin@interviewprep.com / admin123</p>
+                  <p><strong>User:</strong> user@interviewprep.com / user123</p>
+                </div>
+              </div>
+            )}
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/auth/signup"
-              state={{ from: location.state?.from }}
-              className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:underline"
-            >
-              Sign up here
-            </Link>
-          </p>
-        </div>
+            {/* Global Error Message */}
+            {error && (
+              <div className="mb-6">
+                <ErrorMessage message={error} />
+              </div>
+            )}
+
+            {/* Login Form */}
+            <LoginForm onSuccess={handleLoginSuccess} />
+
+            {/* OAuth Buttons */}
+            <div className="mt-6">
+              <OAuthButtons mode="signin" />
+            </div>
+
+            {/* Sign Up Link */}
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    New to InterviewPrep AI?
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center">
+                <Link
+                  to="/signup"
+                  className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+                >
+                  Create your account
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
       </div>
-    </div>
-  );
-};
 
-export default Login;
+      {/* Footer */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+        className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400"
+      >
+        <p>
+          By signing in, you agree to our{' '}
+          <Link to="/terms" className="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+            Privacy Policy
+          </Link>
+        </p>
+      </motion.div>
+    </div>
+  )
+}
+
+export default Login

@@ -1,103 +1,95 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Navigate, useLocation } from 'react-router-dom';
-import {
-  checkAuthStatus,
-  selectIsAuthenticated,
-  selectAuthLoading,
-  selectIsInitialized
-} from '../../store/slices/authSlice.js';
-import { navigationHelpers, ROUTES } from '../../utils/navigation.js';
-import LoadingSpinner from './LoadingSpinner.jsx';
+import { useEffect, useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { Navigate, useLocation } from 'react-router-dom'
+import { getCurrentUserWithProfile } from '../../services/appwrite/auth.js'
+import { setUser, setSession, setLoading } from '../../store/slices/authSlice.js'
+import LoadingSpinner from './LoadingSpinner.jsx'
 
-const AuthGuard = ({ children, requireAuth = true, redirectTo = null }) => {
-  const dispatch = useDispatch();
-  const location = useLocation();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const loading = useSelector(selectAuthLoading);
-  const isInitialized = useSelector(selectIsInitialized);
-
-  console.log('AuthGuard - Current state:', {
-    requireAuth,
-    isAuthenticated,
-    loading,
-    isInitialized,
-    location: location.pathname
-  });
+const AuthGuard = ({ 
+  children, 
+  requireAuth = true, 
+  requireAdmin = false,
+  redirectTo = '/login'
+}) => {
+  const [isInitialized, setIsInitialized] = useState(false)
+  const { user, loading } = useSelector((state) => state.auth)
+  const dispatch = useDispatch()
+  const location = useLocation()
 
   useEffect(() => {
-    // Check authentication status on mount if not initialized
-    if (!isInitialized) {
-      console.log('AuthGuard - Dispatching checkAuthStatus');
-      dispatch(checkAuthStatus());
-    }
-  }, [dispatch, isInitialized]);
+    const initializeAuth = async () => {
+      if (user || !requireAuth) {
+        setIsInitialized(true)
+        return
+      }
 
-  // Show loading spinner while checking authentication
+      try {
+        dispatch(setLoading(true))
+        
+        // Check if user has an active session
+        const userWithProfile = await getCurrentUserWithProfile()
+        
+        if (userWithProfile) {
+          dispatch(setUser(userWithProfile))
+          
+          // Get session data
+          const { getCurrentSession } = await import('../../services/appwrite/auth.js')
+          const session = await getCurrentSession()
+          dispatch(setSession(session))
+        }
+      } catch (error) {
+        // User is not authenticated, which is expected for first-time visitors
+        // Only log non-authentication errors
+        if (error.code !== 401 && !error.message?.includes('Authentication required')) {
+          console.error('Auth initialization error:', error)
+        }
+      } finally {
+        dispatch(setLoading(false))
+        setIsInitialized(true)
+      }
+    }
+
+    initializeAuth()
+  }, [user, requireAuth, dispatch])
+
+  // Show loading spinner while initializing
   if (!isInitialized || loading) {
-    console.log('AuthGuard - Showing loading spinner');
     return (
-      <div style={{ padding: '20px', textAlign: 'center', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #3498db',
-            borderRadius: '50%',
-            margin: '0 auto',
-            animation: 'spin 2s linear infinite'
-          }}></div>
-          <p style={{ marginTop: '10px' }}>Checking authentication...</p>
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Loading...
+          </p>
         </div>
       </div>
-    );
+    )
   }
 
-  // If authentication is required but user is not authenticated
-  if (requireAuth && !isAuthenticated) {
-    const redirectPath = redirectTo || navigationHelpers.getUnauthenticatedRedirect();
-    console.log('AuthGuard - Redirecting to login:', redirectPath);
+  // Check authentication requirement
+  if (requireAuth && !user) {
     // Save the attempted location for redirect after login
-    return <Navigate to={redirectPath} state={{ from: location }} replace />;
+    return (
+      <Navigate 
+        to={redirectTo} 
+        state={{ from: location.pathname }} 
+        replace 
+      />
+    )
   }
 
-  // If authentication is not required but user is authenticated (e.g., auth pages)
-  if (!requireAuth && isAuthenticated) {
-    // Redirect to dashboard or the intended destination
-    const intendedPath = location.state?.from?.pathname;
-    const redirectPath = navigationHelpers.getAuthenticatedRedirect(intendedPath);
-    console.log('AuthGuard - Authenticated user on public route, redirecting to:', redirectPath);
-    return <Navigate to={redirectPath} replace />;
+  // Check admin requirement
+  if (requireAdmin && (!user || !user.profile?.isAdmin)) {
+    // Redirect non-admin users to dashboard
+    return <Navigate to="/dashboard" replace />
   }
 
-  // Render children if all conditions are met
-  console.log('AuthGuard - Rendering children');
-  return children;
-};
+  // If user is authenticated but trying to access auth pages, redirect to dashboard
+  if (!requireAuth && user && (location.pathname === '/login' || location.pathname === '/signup')) {
+    return <Navigate to="/dashboard" replace />
+  }
 
-// Higher-order component for protected routes
-export const ProtectedRoute = ({ children, redirectTo = null }) => {
-  return (
-    <AuthGuard requireAuth={true} redirectTo={redirectTo}>
-      {children}
-    </AuthGuard>
-  );
-};
+  return children
+}
 
-// Higher-order component for public routes (redirect if authenticated)
-export const PublicRoute = ({ children, redirectTo = null }) => {
-  return (
-    <AuthGuard requireAuth={false} redirectTo={redirectTo}>
-      {children}
-    </AuthGuard>
-  );
-};
-
-export default AuthGuard;
+export default AuthGuard

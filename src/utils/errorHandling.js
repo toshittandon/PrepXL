@@ -312,6 +312,122 @@ export const logError = (error, context = {}) => {
 };
 
 /**
+ * Handle Appwrite-specific errors with proper error transformation
+ * @param {Error|Object} error - Appwrite error object
+ * @param {string} fallbackMessage - Fallback message if error parsing fails
+ * @returns {Error} Standardized error object
+ */
+export const handleAppwriteError = (error, fallbackMessage = 'An error occurred') => {
+  // If it's already a standard Error, return it
+  if (error instanceof Error && !error.type) {
+    return error;
+  }
+
+  let message = fallbackMessage;
+  let code = null;
+  let type = null;
+
+  // Handle Appwrite error structure
+  if (error && typeof error === 'object') {
+    // Appwrite errors have a specific structure
+    if (error.message) {
+      message = error.message;
+    }
+    
+    if (error.code) {
+      code = error.code;
+    }
+    
+    if (error.type) {
+      type = error.type;
+    }
+
+    // Handle specific Appwrite error types with user-friendly messages
+    switch (error.code) {
+      case 401:
+        message = 'Authentication required. Please log in again.';
+        break;
+      case 403:
+        message = 'You don\'t have permission to perform this action.';
+        break;
+      case 404:
+        message = 'The requested resource was not found.';
+        break;
+      case 409:
+        message = 'This resource already exists or there\'s a conflict.';
+        break;
+      case 429:
+        message = 'Too many requests. Please wait a moment and try again.';
+        break;
+      case 500:
+        message = 'Server error. Please try again later.';
+        break;
+      case 503:
+        message = 'Service temporarily unavailable. Please try again later.';
+        break;
+    }
+
+    // Handle specific Appwrite error types
+    if (error.type) {
+      switch (error.type) {
+        case 'user_invalid_credentials':
+          message = 'Invalid email or password. Please check your credentials.';
+          break;
+        case 'user_already_exists':
+          message = 'An account with this email already exists.';
+          break;
+        case 'user_not_found':
+          message = 'User account not found.';
+          break;
+        case 'user_email_not_whitelisted':
+          message = 'This email is not authorized to create an account.';
+          break;
+        case 'user_password_mismatch':
+          message = 'Current password is incorrect.';
+          break;
+        case 'document_not_found':
+          message = 'The requested document was not found.';
+          break;
+        case 'document_invalid_structure':
+          message = 'Invalid data structure provided.';
+          break;
+        case 'storage_file_not_found':
+          message = 'The requested file was not found.';
+          break;
+        case 'storage_invalid_file_size':
+          message = 'File size exceeds the allowed limit.';
+          break;
+        case 'storage_invalid_file_type':
+          message = 'File type is not supported.';
+          break;
+        case 'database_invalid_query':
+          message = 'Invalid database query.';
+          break;
+        case 'collection_not_found':
+          message = 'Database collection not found.';
+          break;
+      }
+    }
+  }
+
+  // Create a new Error object with enhanced properties
+  const enhancedError = new Error(message);
+  enhancedError.code = code;
+  enhancedError.type = type;
+  enhancedError.originalError = error;
+  enhancedError.timestamp = new Date().toISOString();
+
+  // Log the error for debugging
+  logError(enhancedError, { 
+    appwriteError: true, 
+    originalError: error,
+    fallbackMessage 
+  });
+
+  return enhancedError;
+};
+
+/**
  * Create error notification object for the notification system
  * @param {Error} error - Error object
  * @param {Object} context - Additional context

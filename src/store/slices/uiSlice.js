@@ -1,146 +1,104 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
   sidebarOpen: false,
   currentModal: null,
   notifications: [],
-  theme: 'light',
-  loading: {
-    global: false,
-    components: {},
-  },
-};
+  theme: 'light'
+}
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    // Toggle sidebar
-    toggleSidebar: (state) => {
-      state.sidebarOpen = !state.sidebarOpen;
-    },
-    
-    // Set sidebar state
     setSidebarOpen: (state, action) => {
-      state.sidebarOpen = action.payload;
+      state.sidebarOpen = action.payload
     },
-    
-    // Open modal
-    openModal: (state, action) => {
-      state.currentModal = action.payload;
+    toggleSidebar: (state) => {
+      state.sidebarOpen = !state.sidebarOpen
     },
-    
-    // Close modal
+    setCurrentModal: (state, action) => {
+      state.currentModal = action.payload
+    },
     closeModal: (state) => {
-      state.currentModal = null;
+      state.currentModal = null
     },
-    
-    // Add notification
     addNotification: (state, action) => {
       const notification = {
         id: Date.now() + Math.random(),
         timestamp: new Date().toISOString(),
-        type: 'info',
-        duration: 5000,
-        persistent: false,
-        ...action.payload,
-      };
-      
-      // Prevent duplicate notifications
-      const isDuplicate = state.notifications.some(existing => 
-        existing.type === notification.type &&
-        existing.title === notification.title &&
-        existing.message === notification.message &&
-        Date.now() - new Date(existing.timestamp).getTime() < 5000
-      );
-      
-      if (!isDuplicate) {
-        state.notifications.push(notification);
-        
-        // Limit total notifications to prevent memory issues
-        if (state.notifications.length > 10) {
-          state.notifications = state.notifications.slice(-10);
-        }
+        ...action.payload
       }
+      state.notifications.push(notification)
     },
-    
-    // Remove notification
     removeNotification: (state, action) => {
       state.notifications = state.notifications.filter(
         notification => notification.id !== action.payload
-      );
+      )
     },
-    
-    // Clear all notifications
     clearNotifications: (state) => {
-      state.notifications = [];
+      state.notifications = []
     },
-    
-    // Set theme
     setTheme: (state, action) => {
-      state.theme = action.payload;
+      state.theme = action.payload
+      // Persist theme to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', action.payload)
+        // Apply theme class to document
+        if (action.payload === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
     },
-    
-    // Set global loading
-    setGlobalLoading: (state, action) => {
-      state.loading.global = action.payload;
+    toggleTheme: (state) => {
+      const newTheme = state.theme === 'light' ? 'dark' : 'light'
+      state.theme = newTheme
+      // Persist theme to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', newTheme)
+        // Apply theme class to document
+        if (newTheme === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
     },
-    
-    // Set component loading
-    setComponentLoading: (state, action) => {
-      const { component, loading } = action.payload;
-      state.loading.components[component] = loading;
+    initializeTheme: (state) => {
+      // Initialize theme from localStorage or system preference
+      if (typeof window !== 'undefined') {
+        const savedTheme = localStorage.getItem('theme')
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        
+        const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light')
+        state.theme = theme
+        
+        // Apply theme class to document
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
     },
-    
-    // Clear component loading
-    clearComponentLoading: (state, action) => {
-      delete state.loading.components[action.payload];
-    },
-    
-    // Clear all loading states
-    clearAllLoading: (state) => {
-      state.loading.global = false;
-      state.loading.components = {};
-    },
-  },
-});
+    reset: () => initialState
+  }
+})
 
 export const {
-  toggleSidebar,
   setSidebarOpen,
-  openModal,
+  toggleSidebar,
+  setCurrentModal,
   closeModal,
   addNotification,
   removeNotification,
   clearNotifications,
   setTheme,
-  setGlobalLoading,
-  setComponentLoading,
-  clearComponentLoading,
-  clearAllLoading,
-} = uiSlice.actions;
+  toggleTheme,
+  initializeTheme,
+  reset
+} = uiSlice.actions
 
-// Add compatibility functions for tests
-export const setLoading = (payload) => {
-  if (typeof payload === 'boolean') {
-    return setGlobalLoading(payload);
-  } else if (typeof payload === 'object' && payload.operation) {
-    return setComponentLoading({ component: payload.operation, loading: payload.loading });
-  }
-  return setGlobalLoading(payload);
-};
-
-// Selectors
-export const selectUI = (state) => state.ui;
-export const selectSidebarOpen = (state) => state.ui.sidebarOpen;
-export const selectCurrentModal = (state) => state.ui.currentModal;
-export const selectNotifications = (state) => state.ui.notifications;
-export const selectTheme = (state) => state.ui.theme;
-export const selectGlobalLoading = (state) => state.ui.loading.global;
-export const selectComponentLoading = (component) => (state) => 
-  state.ui.loading.components[component] || false;
-
-// Add compatibility selector for tests
-export const selectIsLoading = (state) => state.ui.loading.global;
-
-export default uiSlice.reducer;
+export default uiSlice.reducer

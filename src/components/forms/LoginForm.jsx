@@ -1,111 +1,160 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { loginUser, clearError, selectAuthLoading, selectAuthError } from '../../store/slices/authSlice.js';
-import { useFormValidation } from '../../hooks/useFormValidation.js';
-import { loginSchema } from '../../utils/validationSchemas.js';
-import { getErrorMessage } from '../../utils/errorHandling.js';
-import FormField from './FormField.jsx';
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { useDispatch } from 'react-redux'
+import { motion } from 'framer-motion'
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { signInWithEmail } from '../../services/appwrite/auth.js'
+import { setUser, setSession, setError, setLoading } from '../../store/slices/authSlice.js'
+import Button from '../common/Button.jsx'
+import ErrorMessage from '../common/ErrorMessage.jsx'
 
-const LoginForm = ({ onSuccess, onSwitchToSignup }) => {
-  const dispatch = useDispatch();
-  const loading = useSelector(selectAuthLoading);
-  const error = useSelector(selectAuthError);
-
-  const handleFormSubmit = async (data) => {
-    dispatch(clearError());
-    const result = await dispatch(loginUser({
-      email: data.email,
-      password: data.password
-    })).unwrap();
-    
-    if (onSuccess) {
-      onSuccess(result);
-    }
-  };
-
+const LoginForm = ({ onSuccess }) => {
+  const [showPassword, setShowPassword] = useState(false)
+  const dispatch = useDispatch()
+  
   const {
     register,
     handleSubmit,
-    isSubmitting,
-    submitError,
-    getFieldError,
-    isFieldTouched,
-    resetForm
-  } = useFormValidation({
-    schema: loginSchema,
-    defaultValues: {
-      email: '',
-      password: ''
-    },
-    onSubmit: handleFormSubmit
-  });
+    formState: { errors, isSubmitting }
+  } = useForm({
+    mode: 'onBlur'
+  })
+
+  const onSubmit = async (data) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(setError(null))
+      
+      const session = await signInWithEmail({
+        email: data.email,
+        password: data.password
+      })
+      
+      dispatch(setSession(session))
+      
+      // Get user profile data
+      const { getCurrentUserWithProfile } = await import('../../services/appwrite/auth.js')
+      const userWithProfile = await getCurrentUserWithProfile()
+      dispatch(setUser(userWithProfile))
+      
+      if (onSuccess) {
+        onSuccess(userWithProfile)
+      }
+    } catch (error) {
+      dispatch(setError(error.message))
+    } finally {
+      dispatch(setLoading(false))
+    }
+  }
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white shadow-lg rounded-lg px-8 pt-6 pb-8 mb-4">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 text-center">
-            Sign In
-          </h2>
-          <p className="text-gray-600 text-center mt-2">
-            Welcome back! Please sign in to your account.
-          </p>
-        </div>
-
-        {(error || submitError) && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {getErrorMessage(error || submitError, 'An error occurred during login')}
+    <motion.form
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6"
+    >
+      {/* Email Field */}
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Email Address
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Mail className="h-5 w-5 text-gray-400" />
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField
-            label="Email Address"
-            name="email"
+          <input
+            id="email"
             type="email"
+            autoComplete="email"
+            className={`
+              block w-full pl-10 pr-3 py-3 border rounded-xl shadow-sm
+              placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+              transition-colors duration-200
+              ${errors.email 
+                ? 'border-red-300 dark:border-red-600' 
+                : 'border-gray-300 dark:border-gray-600'
+              }
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+            `}
             placeholder="Enter your email"
-            error={getFieldError('email')}
-            touched={isFieldTouched('email')}
-            required
-            showValidIcon
-            {...register('email')}
+            {...register('email', {
+              required: 'Email is required',
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: 'Invalid email address'
+              }
+            })}
           />
+        </div>
+        {errors.email && (
+          <ErrorMessage message={errors.email.message} variant="inline" className="mt-1" />
+        )}
+      </div>
 
-          <FormField
-            label="Password"
-            name="password"
-            type="password"
+      {/* Password Field */}
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Password
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Lock className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            className={`
+              block w-full pl-10 pr-12 py-3 border rounded-xl shadow-sm
+              placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+              transition-colors duration-200
+              ${errors.password 
+                ? 'border-red-300 dark:border-red-600' 
+                : 'border-gray-300 dark:border-gray-600'
+              }
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+            `}
             placeholder="Enter your password"
-            error={getFieldError('password')}
-            touched={isFieldTouched('password')}
-            required
-            showValidIcon
-            {...register('password')}
+            {...register('password', {
+              required: 'Password is required',
+              minLength: {
+                value: 8,
+                message: 'Password must be at least 8 characters'
+              }
+            })}
           />
-
           <button
-            type="submit"
-            disabled={loading || isSubmitting}
-            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              loading || isSubmitting
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
+            type="button"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            onClick={() => setShowPassword(!showPassword)}
           >
-            {(loading || isSubmitting) ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Signing In...
-              </div>
+            {showPassword ? (
+              <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
             ) : (
-              'Sign In'
+              <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
             )}
           </button>
-        </form>
-
-
+        </div>
+        {errors.password && (
+          <ErrorMessage message={errors.password.message} variant="inline" className="mt-1" />
+        )}
       </div>
-    </div>
-  );
-};
 
-export default LoginForm;
+      {/* Submit Button */}
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        className="w-full"
+        loading={isSubmitting}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Signing In...' : 'Sign In'}
+      </Button>
+    </motion.form>
+  )
+}
+
+export default LoginForm

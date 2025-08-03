@@ -1,2 +1,5 @@
-export { default as Login } from './Login';
-export { default as Signup } from './Signup';
+export { default as Login } from './Login.jsx'
+export { default as Signup } from './Signup.jsx'
+export { default as ProfileSetup } from './ProfileSetup.jsx'
+export { default as OAuthCallback } from './OAuthCallback.jsx'
+export { default as OAuthError } from './OAuthError.jsx'

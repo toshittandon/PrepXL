@@ -158,11 +158,210 @@ export const contactSchema = yup.object({
     .max(1000, 'Message must be less than 1000 characters')
 });
 
+// Appwrite data model validation schemas
+export const userDataSchema = yup.object({
+  id: yup.string().optional(),
+  name: yup
+    .string()
+    .required('Name is required')
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be less than 100 characters')
+    .matches(/^[a-zA-Z\s\-']+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+  email: yup
+    .string()
+    .required('Email is required')
+    .matches(emailPattern, 'Please enter a valid email address'),
+  experienceLevel: yup
+    .string()
+    .required('Experience level is required')
+    .oneOf(['Entry', 'Mid', 'Senior', 'Executive'], 'Invalid experience level'),
+  targetRole: yup
+    .string()
+    .max(100, 'Target role must be less than 100 characters')
+    .default(''),
+  targetIndustry: yup
+    .string()
+    .max(100, 'Target industry must be less than 100 characters')
+    .default(''),
+  isAdmin: yup
+    .boolean()
+    .default(false)
+});
+
+export const resumeDataSchema = yup.object({
+  userId: yup
+    .string()
+    .required('User ID is required'),
+  fileId: yup
+    .string()
+    .required('File ID is required'),
+  fileName: yup
+    .string()
+    .required('File name is required')
+    .max(255, 'File name must be less than 255 characters'),
+  jobDescription: yup
+    .string()
+    .required('Job description is required')
+    .min(50, 'Job description must be at least 50 characters')
+    .max(5000, 'Job description must be less than 5000 characters'),
+  analysisResults: yup
+    .object({
+      matchScore: yup.number().min(0).max(100),
+      missingKeywords: yup.array().of(yup.string()),
+      actionVerbAnalysis: yup.string(),
+      formatSuggestions: yup.array().of(yup.string())
+    })
+    .nullable()
+    .default(null)
+});
+
+export const interviewSessionDataSchema = yup.object({
+  userId: yup
+    .string()
+    .required('User ID is required'),
+  sessionType: yup
+    .string()
+    .required('Session type is required')
+    .oneOf(['Behavioral', 'Technical', 'Case Study'], 'Invalid session type'),
+  role: yup
+    .string()
+    .required('Role is required')
+    .max(100, 'Role must be less than 100 characters'),
+  status: yup
+    .string()
+    .oneOf(['active', 'completed', 'abandoned'], 'Invalid status')
+    .default('active'),
+  finalScore: yup
+    .number()
+    .min(0)
+    .max(100)
+    .default(0)
+});
+
+export const interactionDataSchema = yup.object({
+  sessionId: yup
+    .string()
+    .required('Session ID is required'),
+  userId: yup
+    .string()
+    .required('User ID is required'),
+  questionText: yup
+    .string()
+    .required('Question text is required')
+    .max(1000, 'Question text must be less than 1000 characters'),
+  userAnswerText: yup
+    .string()
+    .required('User answer is required')
+    .max(5000, 'Answer must be less than 5000 characters'),
+  order: yup
+    .number()
+    .required('Order is required')
+    .min(1, 'Order must be at least 1')
+});
+
+export const questionDataSchema = yup.object({
+  questionText: yup
+    .string()
+    .required('Question text is required')
+    .min(10, 'Question must be at least 10 characters')
+    .max(1000, 'Question must be less than 1000 characters'),
+  category: yup
+    .string()
+    .required('Category is required')
+    .oneOf(['Behavioral', 'Technical', 'Case Study'], 'Invalid category'),
+  role: yup
+    .string()
+    .required('Role is required')
+    .max(100, 'Role must be less than 100 characters'),
+  suggestedAnswer: yup
+    .string()
+    .required('Suggested answer is required')
+    .min(20, 'Suggested answer must be at least 20 characters')
+    .max(2000, 'Suggested answer must be less than 2000 characters')
+});
+
+// Admin question management schema
+export const adminQuestionSchema = yup.object({
+  questionText: yup
+    .string()
+    .required('Question text is required')
+    .min(10, 'Question must be at least 10 characters')
+    .max(1000, 'Question must be less than 1000 characters'),
+  category: yup
+    .string()
+    .required('Category is required')
+    .oneOf(['Behavioral', 'Technical', 'Case Study'], 'Invalid category'),
+  role: yup
+    .string()
+    .required('Role is required')
+    .max(100, 'Role must be less than 100 characters'),
+  suggestedAnswer: yup
+    .string()
+    .required('Suggested answer is required')
+    .min(20, 'Suggested answer must be at least 20 characters')
+    .max(2000, 'Suggested answer must be less than 2000 characters')
+});
+
+// Job description input schema
+export const jobDescriptionSchema = yup.object({
+  jobDescription: yup
+    .string()
+    .required('Job description is required')
+    .min(50, 'Job description must be at least 50 characters')
+    .max(5000, 'Job description must be less than 5000 characters')
+});
+
+// Validation functions for Appwrite data models
+export const validateUserData = async (data, isUpdate = false) => {
+  try {
+    const schema = isUpdate ? userDataSchema.partial() : userDataSchema;
+    return await schema.validate(data, { abortEarly: false, stripUnknown: true });
+  } catch (error) {
+    throw new Error(`User data validation failed: ${error.errors.join(', ')}`);
+  }
+};
+
+export const validateResumeData = async (data, isUpdate = false) => {
+  try {
+    const schema = isUpdate ? resumeDataSchema.partial() : resumeDataSchema;
+    return await schema.validate(data, { abortEarly: false, stripUnknown: true });
+  } catch (error) {
+    throw new Error(`Resume data validation failed: ${error.errors.join(', ')}`);
+  }
+};
+
+export const validateInterviewSessionData = async (data, isUpdate = false) => {
+  try {
+    const schema = isUpdate ? interviewSessionDataSchema.partial() : interviewSessionDataSchema;
+    return await schema.validate(data, { abortEarly: false, stripUnknown: true });
+  } catch (error) {
+    throw new Error(`Interview session data validation failed: ${error.errors.join(', ')}`);
+  }
+};
+
+export const validateInteractionData = async (data, isUpdate = false) => {
+  try {
+    const schema = isUpdate ? interactionDataSchema.partial() : interactionDataSchema;
+    return await schema.validate(data, { abortEarly: false, stripUnknown: true });
+  } catch (error) {
+    throw new Error(`Interaction data validation failed: ${error.errors.join(', ')}`);
+  }
+};
+
+export const validateQuestionData = async (data, isUpdate = false) => {
+  try {
+    const schema = isUpdate ? questionDataSchema.partial() : questionDataSchema;
+    return await schema.validate(data, { abortEarly: false, stripUnknown: true });
+  } catch (error) {
+    throw new Error(`Question data validation failed: ${error.errors.join(', ')}`);
+  }
+};
+
 // Export validation patterns for reuse
 export const validationPatterns = {
   email: emailPattern,
   password: passwordPattern,
-  name: /^[a-zA-Z\s]+$/,
+  name: /^[a-zA-Z\s\-']+$/,
   alphanumeric: /^[a-zA-Z0-9]+$/,
   phone: /^[\+]?[1-9][\d]{0,15}$/
 };
@@ -174,7 +373,7 @@ export const validationMessages = {
   password: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   passwordLength: 'Password must be at least 8 characters long',
   passwordMatch: 'Passwords do not match',
-  nameFormat: 'Name can only contain letters and spaces',
+  nameFormat: 'Name can only contain letters, spaces, hyphens, and apostrophes',
   minLength: (field, length) => `${field} must be at least ${length} characters long`,
   maxLength: (field, length) => `${field} must be less than ${length} characters`,
   fileSize: 'File size must be less than 5MB',

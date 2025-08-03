@@ -1,54 +1,68 @@
-import { BrowserRouter as Router } from 'react-router-dom';
-import { useEffect, Suspense, memo } from 'react';
-import { useDispatch } from 'react-redux';
-import { checkAuthStatus } from './store/slices/authSlice';
-import { 
-  LoadingSpinner, 
-  RouteRenderer, 
-  ErrorBoundary, 
-  NotificationSystem, 
-  OfflineIndicator 
-} from './components/common';
-import { logBundleInfo, logMemoryUsage } from './utils/performance';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 
-const App = memo(() => {
-  const dispatch = useDispatch();
+// Layout Components
+import { Layout, AdminLayout } from './components/layout'
+import AuthGuard from './components/common/AuthGuard'
 
-  console.log('App component is rendering');
+// Auth Pages
+import { Login, Signup, ProfileSetup } from './pages/auth'
 
-  useEffect(() => {
-    console.log('App useEffect - dispatching checkAuthStatus');
-    // Check authentication status on app load
-    dispatch(checkAuthStatus());
-    
-    // Initialize performance monitoring in development
-    if (process.env.NODE_ENV === 'development') {
-      // Log performance info after initial render
-      const timer = setTimeout(() => {
-        logBundleInfo();
-        logMemoryUsage();
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [dispatch]);
+// Main Pages
+import { Dashboard } from './pages/dashboard'
+import { ResumeUpload } from './pages/resume'
+import { InterviewSetup } from './pages/interview'
+import { QuestionLibrary } from './pages/library'
 
+// Admin Pages
+import { AdminDashboard } from './pages/admin'
+
+function App() {
   return (
-    <ErrorBoundary>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <OfflineIndicator />
-          <Suspense fallback={<LoadingSpinner message="Loading page..." />}>
-            <RouteRenderer />
-          </Suspense>
-          <NotificationSystem />
-        </div>
-      </Router>
-    </ErrorBoundary>
-  );
-});
+    <Router>
+      <AnimatePresence mode="wait">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={
+            <AuthGuard requireAuth={false}>
+              <Login />
+            </AuthGuard>
+          } />
+          <Route path="/signup" element={
+            <AuthGuard requireAuth={false}>
+              <Signup />
+            </AuthGuard>
+          } />
 
-App.displayName = 'App';
+          {/* Protected Routes with Main Layout */}
+          <Route path="/" element={
+            <AuthGuard requireAuth={true}>
+              <Layout />
+            </AuthGuard>
+          }>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="profile/setup" element={<ProfileSetup />} />
+            <Route path="resume-upload" element={<ResumeUpload />} />
+            <Route path="interview/setup" element={<InterviewSetup />} />
+            <Route path="library" element={<QuestionLibrary />} />
+          </Route>
 
-export default App;
+          {/* Admin Routes with Admin Layout */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<div>User Management - Coming Soon</div>} />
+            <Route path="questions" element={<div>Question Management - Coming Soon</div>} />
+            <Route path="settings" element={<div>Admin Settings - Coming Soon</div>} />
+          </Route>
+
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </Router>
+  )
+}
+
+export default App

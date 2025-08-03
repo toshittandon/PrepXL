@@ -1,49 +1,50 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-import { baseApi } from './api/baseApi';
-import './api/dashboardApi'; // Import to register endpoints
-import './api/reportApi'; // Import to register endpoints
-import authSlice from './slices/authSlice';
-import interviewSlice from './slices/interviewSlice';
-import resumeSlice from './slices/resumeSlice';
-import reportSlice from './slices/reportSlice';
-import uiSlice from './slices/uiSlice';
-import { 
-  errorMiddleware, 
-  networkStatusMiddleware, 
-  performanceMiddleware,
-  sanitizationMiddleware 
-} from './middleware/errorMiddleware';
+import { configureStore } from '@reduxjs/toolkit'
+
+// Import slices
+import authSlice from './slices/authSlice'
+import interviewSlice from './slices/interviewSlice'
+import resumeSlice from './slices/resumeSlice'
+import librarySlice from './slices/librarySlice'
+import adminSlice from './slices/adminSlice'
+import uiSlice from './slices/uiSlice'
+
+// Import API slices
+import { appwriteApi } from './api/appwriteApi'
+import { aiApi } from './api/aiApi'
 
 export const store = configureStore({
   reducer: {
-    // API slice
-    [baseApi.reducerPath]: baseApi.reducer,
-    
-    // Feature slices
+    // Add slices
     auth: authSlice,
     interview: interviewSlice,
     resume: resumeSlice,
-    report: reportSlice,
+    library: librarySlice,
+    admin: adminSlice,
     ui: uiSlice,
+    // Add API reducers
+    [appwriteApi.reducerPath]: appwriteApi.reducer,
+    [aiApi.reducerPath]: aiApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: [baseApi.util.resetApiState.type],
+        ignoredActions: [
+          'persist/PERSIST', 
+          'persist/REHYDRATE',
+          // Ignore RTK Query action types
+          'api/executeQuery/pending',
+          'api/executeQuery/fulfilled',
+          'api/executeQuery/rejected',
+          'api/executeMutation/pending',
+          'api/executeMutation/fulfilled',
+          'api/executeMutation/rejected',
+        ],
       },
     })
-    .concat(baseApi.middleware)
-    .concat(errorMiddleware)
-    .concat(networkStatusMiddleware)
-    .concat(performanceMiddleware)
-    .concat(sanitizationMiddleware),
-  devTools: process.env.NODE_ENV !== 'production',
-});
+    // Add API middleware
+    .concat(appwriteApi.middleware)
+    .concat(aiApi.middleware),
+})
 
-// Setup listeners for RTK Query
-setupListeners(store.dispatch);
-
-// Export types for TypeScript usage (if needed later)
-// export type RootState = ReturnType<typeof store.getState>;
-// export type AppDispatch = typeof store.dispatch;
+// Export store for use in components
+export default store

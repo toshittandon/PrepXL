@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,39 +7,176 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
   }
   
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 transition-theme duration-300;
+    @apply dark:bg-dark-900 dark:text-dark-50;
+  }
+
+  * {
+    @apply transition-theme duration-300;
   }
 }
 
 @layer components {
+  /* Button Components with Professional Styling */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800;
+    @apply text-white font-medium py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg;
+    @apply transition-all duration-300 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply dark:focus:ring-offset-dark-900;
+    @apply transform hover:scale-105 active:scale-95;
   }
   
   .btn-secondary {
-    @apply bg-secondary-200 hover:bg-secondary-300 text-secondary-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2;
+    @apply bg-secondary-100 hover:bg-secondary-200 text-secondary-800;
+    @apply dark:bg-dark-800 dark:hover:bg-dark-700 dark:text-dark-200;
+    @apply font-medium py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg;
+    @apply border border-secondary-200 dark:border-dark-600;
+    @apply transition-all duration-300 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2;
+    @apply dark:focus:ring-offset-dark-900;
+    @apply transform hover:scale-105 active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-error-600 to-error-700 hover:from-error-700 hover:to-error-800;
+    @apply text-white font-medium py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg;
+    @apply transition-all duration-300 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2;
+    @apply dark:focus:ring-offset-dark-900;
+    @apply transform hover:scale-105 active:scale-95;
   }
   
+  /* Card Components with Professional Styling */
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white dark:bg-dark-800 rounded-xl shadow-md hover:shadow-lg;
+    @apply border border-gray-200 dark:border-dark-600 p-6;
+    @apply transition-all duration-300 ease-in-out;
+    @apply hover:transform hover:scale-[1.02];
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer;
+    @apply hover:border-primary-300 dark:hover:border-primary-600;
+    @apply hover:shadow-xl;
   }
   
+  /* Form Components with Theme Support */
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500;
+    @apply w-full px-4 py-3 border border-gray-300 dark:border-dark-600;
+    @apply rounded-xl shadow-sm bg-white dark:bg-dark-800;
+    @apply text-gray-900 dark:text-dark-100;
+    @apply placeholder-gray-400 dark:placeholder-dark-400;
+    @apply transition-all duration-300 ease-in-out;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    @apply dark:focus:ring-primary-400 dark:focus:border-primary-400;
+  }
+
+  .input-field:focus {
+    @apply transform scale-[1.02];
   }
   
   .form-label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2;
   }
   
+  /* Message Components */
   .error-message {
-    @apply text-red-600 text-sm mt-1;
+    @apply text-error-600 dark:text-error-400 text-sm mt-2;
+    @apply animate-fade-in;
   }
   
   .success-message {
-    @apply text-green-600 text-sm mt-1;
+    @apply text-success-600 dark:text-success-400 text-sm mt-2;
+    @apply animate-fade-in;
+  }
+
+  .warning-message {
+    @apply text-warning-600 dark:text-warning-400 text-sm mt-2;
+    @apply animate-fade-in;
+  }
+
+  /* Loading Components */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+    @apply dark:border-dark-600 dark:border-t-primary-400;
+  }
+
+  /* Modal Components */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70;
+    @apply transition-opacity duration-300 ease-in-out;
+    @apply backdrop-blur-sm;
+  }
+
+  .modal-content {
+    @apply bg-white dark:bg-dark-800 rounded-xl shadow-xl;
+    @apply border border-gray-200 dark:border-dark-600;
+    @apply transform transition-all duration-300 ease-in-out;
+  }
+
+  /* Navigation Components */
+  .nav-link {
+    @apply text-gray-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400;
+    @apply font-medium transition-colors duration-200;
+    @apply relative;
+  }
+
+  .nav-link.active {
+    @apply text-primary-600 dark:text-primary-400;
+  }
+
+  .nav-link::after {
+    @apply content-[''] absolute bottom-0 left-0 w-0 h-0.5;
+    @apply bg-primary-600 dark:bg-primary-400;
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    @apply w-full;
+  }
+
+  /* Utility Classes */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-primary-800;
+    @apply dark:from-primary-400 dark:to-primary-600;
+    @apply bg-clip-text text-transparent;
+  }
+
+  .border-gradient {
+    @apply border border-transparent bg-gradient-to-r from-primary-600 to-primary-800;
+    @apply dark:from-primary-400 dark:to-primary-600;
+    background-clip: padding-box;
+  }
+
+  /* Scrollbar Styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.400') theme('colors.gray.100');
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: theme('colors.dark.600') theme('colors.dark.800');
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-dark-800;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 dark:bg-dark-600 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500 dark:bg-dark-500;
   }
 }
