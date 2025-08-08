@@ -1,166 +1,199 @@
 // Performance monitoring utilities
 
-/**
- * Measure and log component render performance
- */
-export const measureRenderTime = (componentName, renderFn) => {
-  if (process.env.NODE_ENV === 'development') {
-    const startTime = performance.now();
-    const result = renderFn();
-    const endTime = performance.now();
-    const renderTime = endTime - startTime;
+// Bundle size tracking
+export const trackBundleSize = () => {
+  if (typeof window !== 'undefined' && window.performance) {
+    const navigation = performance.getEntriesByType('navigation')[0]
+    const resources = performance.getEntriesByType('resource')
     
-    if (renderTime > 16) { // Warn if render takes longer than 16ms (60fps threshold)
-      console.warn(`🐌 Slow render detected: ${componentName} took ${renderTime.toFixed(2)}ms`);
+    const bundleInfo = {
+      totalSize: 0,
+      jsSize: 0,
+      cssSize: 0,
+      imageSize: 0,
+      loadTime: navigation.loadEventEnd - navigation.loadEventStart,
+      domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart
     }
-    
-    return result;
-  }
-  return renderFn();
-};
 
-/**
- * Debounce function for performance optimization
- */
-export const debounce = (func, wait, immediate = false) => {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      timeout = null;
-      if (!immediate) func(...args);
-    };
-    const callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func(...args);
-  };
-};
+    resources.forEach(resource => {
+      const size = resource.transferSize || 0
+      bundleInfo.totalSize += size
 
-/**
- * Throttle function for performance optimization
- */
-export const throttle = (func, limit) => {
-  let inThrottle;
-  return function(...args) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  };
-};
-
-/**
- * Lazy load a module with error handling
- */
-export const lazyLoadModule = (importFn, fallback = null) => {
-  return async () => {
-    try {
-      const module = await importFn();
-      return module;
-    } catch (error) {
-      console.error('Failed to lazy load module:', error);
-      if (fallback) {
-        return fallback;
+      if (resource.name.includes('.js')) {
+        bundleInfo.jsSize += size
+      } else if (resource.name.includes('.css')) {
+        bundleInfo.cssSize += size
+      } else if (resource.name.match(/\.(png|jpg|jpeg|gif|svg|webp)$/)) {
+        bundleInfo.imageSize += size
       }
-      throw error;
-    }
-  };
-};
+    })
 
-/**
- * Monitor bundle size in development
- */
-export const logBundleInfo = () => {
+    console.group('📊 Bundle Performance')
+    console.log('Total Size:', formatBytes(bundleInfo.totalSize))
+    console.log('JavaScript:', formatBytes(bundleInfo.jsSize))
+    console.log('CSS:', formatBytes(bundleInfo.cssSize))
+    console.log('Images:', formatBytes(bundleInfo.imageSize))
+    console.log('Load Time:', `${bundleInfo.loadTime.toFixed(2)}ms`)
+    console.log('DOM Content Loaded:', `${bundleInfo.domContentLoaded.toFixed(2)}ms`)
+    console.groupEnd()
+
+    return bundleInfo
+  }
+}
+
+// Format bytes to human readable format
+export const formatBytes = (bytes, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
+// Component render tracking
+export const trackComponentRender = (componentName) => {
   if (process.env.NODE_ENV === 'development') {
-    // Log performance metrics
-    if (window.performance && window.performance.getEntriesByType) {
-      const navigationEntries = window.performance.getEntriesByType('navigation');
-      if (navigationEntries.length > 0) {
-        const nav = navigationEntries[0];
-        console.group('📊 Performance Metrics');
-        console.log(`DOM Content Loaded: ${nav.domContentLoadedEventEnd - nav.domContentLoadedEventStart}ms`);
-        console.log(`Page Load Complete: ${nav.loadEventEnd - nav.loadEventStart}ms`);
-        console.log(`Total Load Time: ${nav.loadEventEnd - nav.fetchStart}ms`);
-        console.groupEnd();
+    const start = performance.now()
+    
+    return () => {
+      const end = performance.now()
+      const renderTime = end - start
+      
+      if (renderTime > 16) { // Warn if render takes longer than 16ms (60fps)
+        console.warn(`⚠️ Slow render: ${componentName} took ${renderTime.toFixed(2)}ms`)
       }
     }
+  }
+  
+  return () => {} // No-op in production
+}
 
-    // Log resource sizes
-    if (window.performance && window.performance.getEntriesByType) {
-      const resources = window.performance.getEntriesByType('resource');
-      const jsResources = resources.filter(r => r.name.includes('.js'));
-      const cssResources = resources.filter(r => r.name.includes('.css'));
+// Memory usage tracking
+export const trackMemoryUsage = () => {
+  if (typeof window !== 'undefined' && window.performance && window.performance.memory) {
+    const memory = window.performance.memory
+    
+    const memoryInfo = {
+      used: memory.usedJSHeapSize,
+      total: memory.totalJSHeapSize,
+      limit: memory.jsHeapSizeLimit
+    }
+
+    console.group('🧠 Memory Usage')
+    console.log('Used:', formatBytes(memoryInfo.used))
+    console.log('Total:', formatBytes(memoryInfo.total))
+    console.log('Limit:', formatBytes(memoryInfo.limit))
+    console.log('Usage:', `${((memoryInfo.used / memoryInfo.total) * 100).toFixed(2)}%`)
+    console.groupEnd()
+
+    return memoryInfo
+  }
+}
+
+// Core Web Vitals tracking
+export const trackCoreWebVitals = () => {
+  if (typeof window !== 'undefined') {
+    // Largest Contentful Paint
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries()
+      const lastEntry = entries[entries.length - 1]
+      console.log('🎯 LCP:', `${lastEntry.startTime.toFixed(2)}ms`)
+    }).observe({ entryTypes: ['largest-contentful-paint'] })
+
+    // First Input Delay
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries()
+      entries.forEach((entry) => {
+        console.log('⚡ FID:', `${entry.processingStart - entry.startTime}ms`)
+      })
+    }).observe({ entryTypes: ['first-input'] })
+
+    // Cumulative Layout Shift
+    let clsValue = 0
+    new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries()
+      entries.forEach((entry) => {
+        if (!entry.hadRecentInput) {
+          clsValue += entry.value
+        }
+      })
+      console.log('📐 CLS:', clsValue.toFixed(4))
+    }).observe({ entryTypes: ['layout-shift'] })
+  }
+}
+
+// Lazy loading performance
+export const trackLazyLoading = (elementName) => {
+  const start = performance.now()
+  
+  return () => {
+    const end = performance.now()
+    const loadTime = end - start
+    console.log(`🔄 Lazy Load: ${elementName} loaded in ${loadTime.toFixed(2)}ms`)
+  }
+}
+
+// Route change performance
+export const trackRouteChange = (routeName) => {
+  const start = performance.now()
+  
+  return () => {
+    const end = performance.now()
+    const navigationTime = end - start
+    console.log(`🛣️ Route: ${routeName} loaded in ${navigationTime.toFixed(2)}ms`)
+  }
+}
+
+// Redux action performance
+export const trackReduxAction = (actionType) => {
+  if (process.env.NODE_ENV === 'development') {
+    const start = performance.now()
+    
+    return () => {
+      const end = performance.now()
+      const actionTime = end - start
       
-      console.group('📦 Bundle Information');
-      console.log(`JavaScript files: ${jsResources.length}`);
-      console.log(`CSS files: ${cssResources.length}`);
-      
-      const totalJSSize = jsResources.reduce((sum, r) => sum + (r.transferSize || 0), 0);
-      const totalCSSSize = cssResources.reduce((sum, r) => sum + (r.transferSize || 0), 0);
-      
-      console.log(`Total JS size: ${(totalJSSize / 1024).toFixed(2)} KB`);
-      console.log(`Total CSS size: ${(totalCSSSize / 1024).toFixed(2)} KB`);
-      console.groupEnd();
+      if (actionTime > 5) { // Warn if action takes longer than 5ms
+        console.warn(`🔄 Slow Redux Action: ${actionType} took ${actionTime.toFixed(2)}ms`)
+      }
     }
   }
-};
-
-/**
- * Memory usage monitoring
- */
-export const logMemoryUsage = () => {
-  if (process.env.NODE_ENV === 'development' && window.performance && window.performance.memory) {
-    const memory = window.performance.memory;
-    console.group('🧠 Memory Usage');
-    console.log(`Used: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`Total: ${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`Limit: ${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`);
-    console.groupEnd();
-  }
-};
-
-/**
- * Component performance profiler HOC
- * Note: Import React in components that use this HOC
- */
-export const withPerformanceProfiler = (WrappedComponent, componentName) => {
-  if (process.env.NODE_ENV === 'production') {
-    return WrappedComponent;
-  }
-
-  return function ProfiledComponent(props) {
-    // This would need React to be imported in the consuming component
-    console.log(`🔍 Rendering ${componentName}`);
-    return WrappedComponent(props);
-  };
-};
-
-/**
- * Bundle size analyzer for development
- */
-export const analyzeBundleSize = () => {
-  if (process.env.NODE_ENV === 'development') {
-    // This would typically be used with a build tool
-    console.log('📊 Bundle analysis available in build mode');
-    console.log('Run: npm run build:analyze');
-  }
-};
+  
+  return () => {} // No-op in production
+}
 
 // Initialize performance monitoring
-if (typeof window !== 'undefined') {
-  // Log bundle info after page load
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      logBundleInfo();
-      logMemoryUsage();
-    }, 1000);
-  });
-
-  // Monitor memory usage periodically in development
+export const initPerformanceMonitoring = () => {
   if (process.env.NODE_ENV === 'development') {
+    // Track initial bundle size and load time
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        trackBundleSize()
+        trackMemoryUsage()
+        trackCoreWebVitals()
+      }, 1000)
+    })
+
+    // Track memory usage periodically
     setInterval(() => {
-      logMemoryUsage();
-    }, 30000); // Every 30 seconds
+      trackMemoryUsage()
+    }, 30000) // Every 30 seconds
+  }
+}
+
+// Performance HOC for components
+export const withPerformanceTracking = (WrappedComponent, componentName) => {
+  return function PerformanceTrackedComponent(props) {
+    const trackRender = trackComponentRender(componentName)
+    
+    React.useEffect(() => {
+      trackRender()
+    })
+
+    return React.createElement(WrappedComponent, props)
   }
 }

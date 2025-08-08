@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
 import { useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
@@ -7,54 +6,100 @@ import { signInWithEmail } from '../../services/appwrite/auth.js'
 import { setUser, setSession, setError, setLoading } from '../../store/slices/authSlice.js'
 import Button from '../common/Button.jsx'
 import ErrorMessage from '../common/ErrorMessage.jsx'
+import SuccessMessage from '../common/SuccessMessage.jsx'
+import { useFormValidation } from '../../hooks/useFormValidation.js'
+import { loginSchema } from '../../utils/validationSchemas.js'
 
 const LoginForm = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false)
   const dispatch = useDispatch()
-  
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
-  } = useForm({
-    mode: 'onBlur'
-  })
-
-  const onSubmit = async (data) => {
-    try {
+    formState: { errors },
+    isSubmitting,
+    submitError,
+    submitSuccess,
+    clearAllErrors,
+    resetForm
+  } = useFormValidation({
+    schema: loginSchema,
+    mode: 'onBlur',
+    onSubmit: async (data) => {
       dispatch(setLoading(true))
       dispatch(setError(null))
       
-      const session = await signInWithEmail({
-        email: data.email,
-        password: data.password
-      })
-      
-      dispatch(setSession(session))
-      
-      // Get user profile data
-      const { getCurrentUserWithProfile } = await import('../../services/appwrite/auth.js')
-      const userWithProfile = await getCurrentUserWithProfile()
-      dispatch(setUser(userWithProfile))
-      
-      if (onSuccess) {
-        onSuccess(userWithProfile)
+      try {
+        const session = await signInWithEmail({
+          email: data.email,
+          password: data.password
+        })
+        
+        dispatch(setSession(session))
+        
+        // Get user profile data
+        const { getCurrentUserWithProfile } = await import('../../services/appwrite/auth.js')
+        const userWithProfile = await getCurrentUserWithProfile()
+        dispatch(setUser(userWithProfile))
+        
+        if (onSuccess) {
+          onSuccess(userWithProfile)
+        }
+      } catch (error) {
+        dispatch(setError(error.message))
+        throw error // Re-throw to be handled by useFormValidation
+      } finally {
+        dispatch(setLoading(false))
       }
-    } catch (error) {
-      dispatch(setError(error.message))
-    } finally {
-      dispatch(setLoading(false))
+    },
+    onError: (error) => {
+      // Handle specific authentication errors
+      if (error.message?.includes('Invalid credentials')) {
+        dispatch(setError('Invalid email or password. Please try again.'))
+      } else if (error.message?.includes('Too many requests')) {
+        dispatch(setError('Too many login attempts. Please try again later.'))
+      } else {
+        dispatch(setError(error.message || 'Login failed. Please try again.'))
+      }
     }
-  }
+  })
 
   return (
     <motion.form
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit}
       className="space-y-6"
     >
+      {/* Success Message */}
+      {submitSuccess && (
+        <SuccessMessage 
+          message="Login successful! Redirecting..."
+          autoHide
+          autoHideDelay={2000}
+        />
+      )}
+
+      {/* Error Message */}
+      {submitError && (
+        <ErrorMessage 
+          message={submitError}
+          onClose={clearAllErrors}
+          actions={
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={resetForm}
+            >
+              Try Again
+            </Button>
+          }
+        />
+      )}
+
       {/* Email Field */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -79,13 +124,7 @@ const LoginForm = ({ onSuccess }) => {
               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             `}
             placeholder="Enter your email"
-            {...register('email', {
-              required: 'Email is required',
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address'
-              }
-            })}
+            {...register('email')}
           />
         </div>
         {errors.email && (
@@ -117,18 +156,13 @@ const LoginForm = ({ onSuccess }) => {
               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             `}
             placeholder="Enter your password"
-            {...register('password', {
-              required: 'Password is required',
-              minLength: {
-                value: 8,
-                message: 'Password must be at least 8 characters'
-              }
-            })}
+            {...register('password')}
           />
           <button
             type="button"
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
             onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
               <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />

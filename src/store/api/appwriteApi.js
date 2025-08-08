@@ -44,101 +44,294 @@ export const appwriteApi = createApi({
     
     // Resume endpoints
     getResumes: builder.query({
-      query: (userId) => `/api/resumes?userId=${userId}`,
+      queryFn: async (userId) => {
+        try {
+          const { getUserResumes } = await import('../../services/appwrite/database.js')
+          const result = await getUserResumes(userId)
+          return { data: result.documents || [] }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
       providesTags: ['Resume']
     }),
     
+    getResumeById: builder.query({
+      queryFn: async (resumeId) => {
+        try {
+          const { getResumeById } = await import('../../services/appwrite/database.js')
+          const result = await getResumeById(resumeId)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
+      providesTags: (result, error, resumeId) => [{ type: 'Resume', id: resumeId }]
+    }),
+    
     createResume: builder.mutation({
-      query: (resumeData) => ({
-        url: '/api/resumes',
-        method: 'POST',
-        body: resumeData
-      }),
+      queryFn: async (resumeData) => {
+        try {
+          const { createResumeRecord } = await import('../../services/appwrite/database.js')
+          const result = await createResumeRecord(resumeData)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['Resume']
+    }),
+    
+    updateResumeAnalysis: builder.mutation({
+      queryFn: async ({ resumeId, analysisResults }) => {
+        try {
+          const { updateResumeAnalysis } = await import('../../services/appwrite/database.js')
+          const result = await updateResumeAnalysis(resumeId, analysisResults)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
+      invalidatesTags: (result, error, { resumeId }) => [
+        'Resume',
+        { type: 'Resume', id: resumeId }
+      ]
     }),
     
     // Interview session endpoints
     getInterviewSessions: builder.query({
-      query: (userId) => `/api/interview-sessions?userId=${userId}`,
+      queryFn: async (userId) => {
+        try {
+          const { getInterviewSessionsByUserId } = await import('../../services/appwrite/database.js')
+          const result = await getInterviewSessionsByUserId(userId)
+          return { data: result.documents || [] }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
       providesTags: ['InterviewSession']
     }),
     
     createInterviewSession: builder.mutation({
-      query: (sessionData) => ({
-        url: '/api/interview-sessions',
-        method: 'POST',
-        body: sessionData
-      }),
+      queryFn: async (sessionData) => {
+        try {
+          const { createInterviewSession } = await import('../../services/appwrite/database.js')
+          const result = await createInterviewSession(sessionData)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['InterviewSession']
     }),
     
     updateInterviewSession: builder.mutation({
-      query: ({ sessionId, ...sessionData }) => ({
-        url: `/api/interview-sessions/${sessionId}`,
-        method: 'PUT',
-        body: sessionData
-      }),
+      queryFn: async ({ sessionId, ...sessionData }) => {
+        try {
+          const { updateInterviewSession } = await import('../../services/appwrite/database.js')
+          const result = await updateInterviewSession(sessionId, sessionData)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['InterviewSession']
     }),
     
     // Interaction endpoints
     getInteractions: builder.query({
-      query: (sessionId) => `/api/interactions?sessionId=${sessionId}`,
+      queryFn: async (sessionId) => {
+        try {
+          const { getInteractionsBySessionId } = await import('../../services/appwrite/database.js')
+          const result = await getInteractionsBySessionId(sessionId)
+          return { data: result.documents || [] }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
       providesTags: ['Interaction']
     }),
     
     createInteraction: builder.mutation({
-      query: (interactionData) => ({
-        url: '/api/interactions',
-        method: 'POST',
-        body: interactionData
-      }),
+      queryFn: async (interactionData) => {
+        try {
+          const { createInteraction } = await import('../../services/appwrite/database.js')
+          const result = await createInteraction(interactionData)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
+      invalidatesTags: ['Interaction']
+    }),
+    
+    // Batch create interactions for better performance
+    createInteractionBatch: builder.mutation({
+      queryFn: async (interactions) => {
+        try {
+          const { createInteraction } = await import('../../services/appwrite/database.js')
+          const results = await Promise.all(
+            interactions.map(interaction => createInteraction(interaction))
+          )
+          return { data: results }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['Interaction']
     }),
     
     // Question endpoints
     getQuestions: builder.query({
-      query: (filters = {}) => {
-        const params = new URLSearchParams(filters).toString()
-        return `/api/questions${params ? `?${params}` : ''}`
+      queryFn: async (filters = {}) => {
+        try {
+          const { getQuestions } = await import('../../services/appwrite/database.js')
+          const result = await getQuestions(filters, filters.limit || 100, filters.offset || 0)
+          return { data: result.documents || [] }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
       },
       providesTags: ['Question']
     }),
     
+    getQuestionsByCategory: builder.query({
+      queryFn: async ({ category, limit = 50 }) => {
+        try {
+          const { getQuestionsByCategory } = await import('../../services/appwrite/database.js')
+          const result = await getQuestionsByCategory(category, limit)
+          return { data: result.documents || [] }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
+      providesTags: (result, error, { category }) => [
+        'Question',
+        { type: 'Question', id: `category-${category}` }
+      ]
+    }),
+    
+    getQuestionsByRole: builder.query({
+      queryFn: async ({ role, limit = 50 }) => {
+        try {
+          const { getQuestionsByRole } = await import('../../services/appwrite/database.js')
+          const result = await getQuestionsByRole(role, limit)
+          return { data: result.documents || [] }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
+      providesTags: (result, error, { role }) => [
+        'Question',
+        { type: 'Question', id: `role-${role}` }
+      ]
+    }),
+    
     createQuestion: builder.mutation({
-      query: (questionData) => ({
-        url: '/api/questions',
-        method: 'POST',
-        body: questionData
-      }),
+      queryFn: async (questionData) => {
+        try {
+          const { createQuestion } = await import('../../services/appwrite/database.js')
+          const result = await createQuestion(questionData)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['Question']
     }),
     
     updateQuestion: builder.mutation({
-      query: ({ questionId, ...questionData }) => ({
-        url: `/api/questions/${questionId}`,
-        method: 'PUT',
-        body: questionData
-      }),
+      queryFn: async ({ questionId, ...questionData }) => {
+        try {
+          const { updateQuestion } = await import('../../services/appwrite/database.js')
+          const result = await updateQuestion(questionId, questionData)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['Question']
     }),
     
     deleteQuestion: builder.mutation({
-      query: (questionId) => ({
-        url: `/api/questions/${questionId}`,
-        method: 'DELETE'
-      }),
+      queryFn: async (questionId) => {
+        try {
+          const { deleteQuestion } = await import('../../services/appwrite/database.js')
+          await deleteQuestion(questionId)
+          return { data: { success: true } }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
       invalidatesTags: ['Question']
     }),
     
     // Admin endpoints
     getAllUsers: builder.query({
-      query: () => '/api/admin/users',
+      queryFn: async ({ limit = 100, offset = 0 } = {}) => {
+        try {
+          const { getAllUsers } = await import('../../services/appwrite/database.js')
+          const result = await getAllUsers(limit, offset)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
       providesTags: ['User']
     }),
     
-    getAnalytics: builder.query({
-      query: () => '/api/admin/analytics',
+    searchUsers: builder.query({
+      queryFn: async ({ searchTerm, limit = 25 }) => {
+        try {
+          const { searchUsers } = await import('../../services/appwrite/database.js')
+          const result = await searchUsers(searchTerm, limit)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
+      providesTags: ['User']
+    }),
+    
+    updateUserRole: builder.mutation({
+      queryFn: async ({ userId, isAdmin }) => {
+        try {
+          const { updateUser } = await import('../../services/appwrite/database.js')
+          const result = await updateUser(userId, { isAdmin })
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message } }
+        }
+      },
+      invalidatesTags: ['User']
+    }),
+    
+    getUserAnalytics: builder.query({
+      queryFn: async (userId) => {
+        try {
+          const { getUserAnalytics } = await import('../../services/appwrite/database.js')
+          const result = await getUserAnalytics(userId)
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
+      providesTags: (result, error, userId) => [
+        'Analytics',
+        { type: 'Analytics', id: userId }
+      ]
+    }),
+    
+    getApplicationAnalytics: builder.query({
+      queryFn: async () => {
+        try {
+          const { getApplicationAnalytics } = await import('../../services/appwrite/database.js')
+          const result = await getApplicationAnalytics()
+          return { data: result }
+        } catch (error) {
+          return { error: { status: 'FETCH_ERROR', error: error.message } }
+        }
+      },
       providesTags: ['Analytics']
     })
   })
@@ -149,16 +342,24 @@ export const {
   useGetUserQuery,
   useUpdateUserMutation,
   useGetResumesQuery,
+  useGetResumeByIdQuery,
   useCreateResumeMutation,
+  useUpdateResumeAnalysisMutation,
   useGetInterviewSessionsQuery,
   useCreateInterviewSessionMutation,
   useUpdateInterviewSessionMutation,
   useGetInteractionsQuery,
   useCreateInteractionMutation,
+  useCreateInteractionBatchMutation,
   useGetQuestionsQuery,
+  useGetQuestionsByCategoryQuery,
+  useGetQuestionsByRoleQuery,
   useCreateQuestionMutation,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,
   useGetAllUsersQuery,
-  useGetAnalyticsQuery
+  useSearchUsersQuery,
+  useUpdateUserRoleMutation,
+  useGetUserAnalyticsQuery,
+  useGetApplicationAnalyticsQuery
 } = appwriteApi

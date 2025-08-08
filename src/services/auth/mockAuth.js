@@ -54,11 +54,11 @@ const mockDelay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms))
  */
 export const createAccount = async ({ email, password, name }) => {
   await mockDelay()
-  
+
   if (MOCK_USERS[email]) {
     throw new Error('An account with this email already exists')
   }
-  
+
   const userId = `mock-${Date.now()}`
   const newUser = {
     $id: userId,
@@ -77,9 +77,9 @@ export const createAccount = async ({ email, password, name }) => {
       updatedAt: new Date().toISOString()
     }
   }
-  
+
   MOCK_USERS[email] = newUser
-  
+
   return {
     account: newUser,
     profile: newUser.profile
@@ -91,20 +91,20 @@ export const createAccount = async ({ email, password, name }) => {
  */
 export const signInWithEmail = async ({ email, password }) => {
   await mockDelay()
-  
+
   const user = MOCK_USERS[email]
   if (!user || user.password !== password) {
     throw new Error('Invalid email or password')
   }
-  
+
   currentSession = {
     $id: `session-${Date.now()}`,
     userId: user.$id,
     expire: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
   }
-  
+
   currentUser = user
-  
+
   return currentSession
 }
 
@@ -113,7 +113,7 @@ export const signInWithEmail = async ({ email, password }) => {
  */
 export const signInWithOAuth = async (provider, successUrl, failureUrl) => {
   await mockDelay()
-  
+
   // For mock, just redirect to success URL
   window.location.href = successUrl
 }
@@ -123,13 +123,13 @@ export const signInWithOAuth = async (provider, successUrl, failureUrl) => {
  */
 export const getCurrentSession = async () => {
   await mockDelay(100)
-  
+
   if (!currentSession) {
     const error = new Error('Authentication required')
     error.code = 401
     throw error
   }
-  
+
   return currentSession
 }
 
@@ -138,13 +138,13 @@ export const getCurrentSession = async () => {
  */
 export const getCurrentUser = async () => {
   await mockDelay(100)
-  
+
   if (!currentUser) {
     const error = new Error('Authentication required')
     error.code = 401
     throw error
   }
-  
+
   return currentUser
 }
 
@@ -153,13 +153,13 @@ export const getCurrentUser = async () => {
  */
 export const getCurrentUserWithProfile = async () => {
   await mockDelay(100)
-  
+
   if (!currentUser) {
     const error = new Error('Authentication required')
     error.code = 401
     throw error
   }
-  
+
   return {
     ...currentUser,
     profile: currentUser.profile
@@ -171,7 +171,7 @@ export const getCurrentUserWithProfile = async () => {
  */
 export const signOut = async () => {
   await mockDelay(100)
-  
+
   currentSession = null
   currentUser = null
 }
@@ -193,18 +193,18 @@ export const signOutFromAllSessions = async () => {
  */
 export const updatePassword = async (newPassword, oldPassword) => {
   await mockDelay()
-  
+
   if (!currentUser) {
     throw new Error('Authentication required')
   }
-  
+
   if (currentUser.password !== oldPassword) {
     throw new Error('Current password is incorrect')
   }
-  
+
   currentUser.password = newPassword
   MOCK_USERS[currentUser.email].password = newPassword
-  
+
   return currentUser
 }
 
@@ -213,29 +213,29 @@ export const updatePassword = async (newPassword, oldPassword) => {
  */
 export const updateEmail = async (email, password) => {
   await mockDelay()
-  
+
   if (!currentUser) {
     throw new Error('Authentication required')
   }
-  
+
   if (currentUser.password !== password) {
     throw new Error('Current password is incorrect')
   }
-  
+
   if (MOCK_USERS[email] && email !== currentUser.email) {
     throw new Error('An account with this email already exists')
   }
-  
+
   // Remove old email entry
   delete MOCK_USERS[currentUser.email]
-  
+
   // Update user data
   currentUser.email = email
   currentUser.profile.email = email
-  
+
   // Add new email entry
   MOCK_USERS[email] = currentUser
-  
+
   return currentUser
 }
 
@@ -244,16 +244,16 @@ export const updateEmail = async (email, password) => {
  */
 export const updateName = async (name) => {
   await mockDelay()
-  
+
   if (!currentUser) {
     throw new Error('Authentication required')
   }
-  
+
   currentUser.name = name
   currentUser.profile.name = name
   MOCK_USERS[currentUser.email].name = name
   MOCK_USERS[currentUser.email].profile.name = name
-  
+
   return currentUser
 }
 
@@ -262,14 +262,14 @@ export const updateName = async (name) => {
  */
 export const sendPasswordRecovery = async (email, url) => {
   await mockDelay()
-  
+
   if (!MOCK_USERS[email]) {
     throw new Error('User not found')
   }
-  
+
   console.log(`Mock: Password recovery email sent to ${email}`)
   console.log(`Mock: Recovery URL: ${url}?userId=${MOCK_USERS[email].$id}&secret=mock-secret`)
-  
+
   return { $id: 'mock-recovery-id' }
 }
 
@@ -278,18 +278,18 @@ export const sendPasswordRecovery = async (email, url) => {
  */
 export const completePasswordRecovery = async (userId, secret, password) => {
   await mockDelay()
-  
+
   if (secret !== 'mock-secret') {
     throw new Error('Invalid recovery secret')
   }
-  
+
   const user = Object.values(MOCK_USERS).find(u => u.$id === userId)
   if (!user) {
     throw new Error('User not found')
   }
-  
+
   user.password = password
-  
+
   return { $id: 'mock-recovery-completion-id' }
 }
 
@@ -298,14 +298,14 @@ export const completePasswordRecovery = async (userId, secret, password) => {
  */
 export const sendEmailVerification = async (url) => {
   await mockDelay()
-  
+
   if (!currentUser) {
     throw new Error('Authentication required')
   }
-  
+
   console.log(`Mock: Email verification sent to ${currentUser.email}`)
   console.log(`Mock: Verification URL: ${url}?userId=${currentUser.$id}&secret=mock-verification-secret`)
-  
+
   return { $id: 'mock-verification-id' }
 }
 
@@ -314,19 +314,19 @@ export const sendEmailVerification = async (url) => {
  */
 export const completeEmailVerification = async (userId, secret) => {
   await mockDelay()
-  
+
   if (secret !== 'mock-verification-secret') {
     throw new Error('Invalid verification secret')
   }
-  
+
   const user = Object.values(MOCK_USERS).find(u => u.$id === userId)
   if (!user) {
     throw new Error('User not found')
   }
-  
+
   // Mark email as verified (in a real app, you'd have an emailVerified field)
   console.log(`Mock: Email verified for user ${user.email}`)
-  
+
   return { $id: 'mock-verification-completion-id' }
 }
 
@@ -335,7 +335,7 @@ export const completeEmailVerification = async (userId, secret) => {
  */
 export const isUserAdmin = async (userId) => {
   await mockDelay(100)
-  
+
   const user = Object.values(MOCK_USERS).find(u => u.$id === userId)
   return user?.profile?.isAdmin === true
 }
@@ -345,15 +345,15 @@ export const isUserAdmin = async (userId) => {
  */
 export const validateUserSession = async (requireAdmin = false) => {
   const user = await getCurrentUserWithProfile()
-  
+
   if (!user) {
     throw new Error('User not authenticated')
   }
-  
+
   if (requireAdmin && !user.profile?.isAdmin) {
     throw new Error('Admin privileges required')
   }
-  
+
   return user
 }
 

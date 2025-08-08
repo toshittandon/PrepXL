@@ -760,3 +760,17 @@ export const getApplicationAnalytics = async () => {
     throw handleAppwriteError(error, 'Failed to get application analytics')
   }
 }
+
+// ============================================================================
+// ALIAS FUNCTIONS FOR RESUME SLICE COMPATIBILITY
+// ============================================================================
+
+/**
+ * Alias for createResume - used by resumeSlice
+ */
+export const createResumeRecord = createResume
+
+/**
+ * Alias for getResumesByUserId - used by resumeSlice
+ */
+export const getUserResumes = getResumesByUserId

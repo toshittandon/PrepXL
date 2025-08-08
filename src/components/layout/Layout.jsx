@@ -1,36 +1,21 @@
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 import { Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import Footer from './Footer'
+import { pageVariants } from '../../utils/animations'
 
-const Layout = () => {
+const Layout = memo(() => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  const handleMobileMenuToggle = () => {
+  const handleMobileMenuToggle = useCallback(() => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+  }, [isMobileMenuOpen])
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        duration: 0.4,
-        ease: 'easeOut'
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      y: -20,
-      transition: {
-        duration: 0.3,
-        ease: 'easeIn'
-      }
-    }
-  }
+  const handleMobileMenuClose = useCallback(() => {
+    setIsMobileMenuOpen(false)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -43,7 +28,7 @@ const Layout = () => {
       {/* Mobile Sidebar */}
       <Sidebar 
         isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
+        onClose={handleMobileMenuClose}
       />
 
       {/* Main Content */}
@@ -62,6 +47,8 @@ const Layout = () => {
       <Footer />
     </div>
   )
-}
+})
+
+Layout.displayName = 'Layout'
 
 export default Layout

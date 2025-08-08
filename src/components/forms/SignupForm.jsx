@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
 import { useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
@@ -7,68 +6,114 @@ import { createAccount } from '../../services/appwrite/auth.js'
 import { setUser, setSession, setError, setLoading } from '../../store/slices/authSlice.js'
 import Button from '../common/Button.jsx'
 import ErrorMessage from '../common/ErrorMessage.jsx'
+import SuccessMessage from '../common/SuccessMessage.jsx'
+import { useFormValidation } from '../../hooks/useFormValidation.js'
+import { signupSchema } from '../../utils/validationSchemas.js'
 
 const SignupForm = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const dispatch = useDispatch()
-  
+
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting }
-  } = useForm({
-    mode: 'onBlur'
-  })
-
-  const password = watch('password')
-
-  const onSubmit = async (data) => {
-    try {
+    formState: { errors },
+    isSubmitting,
+    submitError,
+    submitSuccess,
+    clearAllErrors,
+    resetForm
+  } = useFormValidation({
+    schema: signupSchema,
+    mode: 'onBlur',
+    onSubmit: async (data) => {
       dispatch(setLoading(true))
       dispatch(setError(null))
       
-      const result = await createAccount({
-        email: data.email,
-        password: data.password,
-        name: data.name
-      })
-      
-      // Sign in the user after successful registration
-      const { signInWithEmail } = await import('../../services/appwrite/auth.js')
-      const session = await signInWithEmail({
-        email: data.email,
-        password: data.password
-      })
-      
-      dispatch(setSession(session))
-      dispatch(setUser({
-        ...result.account,
-        profile: result.profile
-      }))
-      
-      if (onSuccess) {
-        onSuccess({
+      try {
+        const result = await createAccount({
+          email: data.email,
+          password: data.password,
+          name: data.name
+        })
+        
+        // Sign in the user after successful registration
+        const { signInWithEmail } = await import('../../services/appwrite/auth.js')
+        const session = await signInWithEmail({
+          email: data.email,
+          password: data.password
+        })
+        
+        dispatch(setSession(session))
+        dispatch(setUser({
           ...result.account,
           profile: result.profile
-        })
+        }))
+        
+        if (onSuccess) {
+          onSuccess({
+            ...result.account,
+            profile: result.profile
+          })
+        }
+      } catch (error) {
+        dispatch(setError(error.message))
+        throw error // Re-throw to be handled by useFormValidation
+      } finally {
+        dispatch(setLoading(false))
       }
-    } catch (error) {
-      dispatch(setError(error.message))
-    } finally {
-      dispatch(setLoading(false))
+    },
+    onError: (error) => {
+      // Handle specific signup errors
+      if (error.message?.includes('already exists')) {
+        dispatch(setError('An account with this email already exists. Please try logging in instead.'))
+      } else if (error.message?.includes('password')) {
+        dispatch(setError('Password does not meet requirements. Please try a stronger password.'))
+      } else {
+        dispatch(setError(error.message || 'Account creation failed. Please try again.'))
+      }
     }
-  }
+  })
+
+  const password = watch('password')
 
   return (
     <motion.form
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit}
       className="space-y-6"
     >
+      {/* Success Message */}
+      {submitSuccess && (
+        <SuccessMessage 
+          message="Account created successfully! Redirecting..."
+          autoHide
+          autoHideDelay={2000}
+        />
+      )}
+
+      {/* Error Message */}
+      {submitError && (
+        <ErrorMessage 
+          message={submitError}
+          onClose={clearAllErrors}
+          actions={
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={resetForm}
+            >
+              Try Again
+            </Button>
+          }
+        />
+      )}
+
       {/* Name Field */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -93,17 +138,7 @@ const SignupForm = ({ onSuccess }) => {
               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             `}
             placeholder="Enter your full name"
-            {...register('name', {
-              required: 'Full name is required',
-              minLength: {
-                value: 2,
-                message: 'Name must be at least 2 characters'
-              },
-              maxLength: {
-                value: 50,
-                message: 'Name must be less than 50 characters'
-              }
-            })}
+            {...register('name')}
           />
         </div>
         {errors.name && (
@@ -135,13 +170,7 @@ const SignupForm = ({ onSuccess }) => {
               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             `}
             placeholder="Enter your email"
-            {...register('email', {
-              required: 'Email is required',
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address'
-              }
-            })}
+            {...register('email')}
           />
         </div>
         {errors.email && (
@@ -173,22 +202,13 @@ const SignupForm = ({ onSuccess }) => {
               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             `}
             placeholder="Create a password"
-            {...register('password', {
-              required: 'Password is required',
-              minLength: {
-                value: 8,
-                message: 'Password must be at least 8 characters'
-              },
-              pattern: {
-                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-              }
-            })}
+            {...register('password')}
           />
           <button
             type="button"
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
             onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
               <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
@@ -226,15 +246,13 @@ const SignupForm = ({ onSuccess }) => {
               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             `}
             placeholder="Confirm your password"
-            {...register('confirmPassword', {
-              required: 'Please confirm your password',
-              validate: value => value === password || 'Passwords do not match'
-            })}
+            {...register('confirmPassword')}
           />
           <button
             type="button"
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
           >
             {showConfirmPassword ? (
               <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />

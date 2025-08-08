@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { User, Briefcase, Building, CheckCircle } from 'lucide-react'
 import { updateUser } from '../../services/appwrite/database.js'
 import { setUser, setError, setLoading } from '../../store/slices/authSlice.js'
 import Button from '../../components/common/Button.jsx'
 import ErrorMessage from '../../components/common/ErrorMessage.jsx'
+import SuccessMessage from '../../components/common/SuccessMessage.jsx'
 import Card from '../../components/common/Card.jsx'
+import { useFormValidation } from '../../hooks/useFormValidation.js'
+import { profileSetupSchema } from '../../utils/validationSchemas.js'
 
 const ProfileSetup = () => {
   const { user, error, loading } = useSelector((state) => state.auth)
@@ -21,13 +23,51 @@ const ProfileSetup = () => {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting }
-  } = useForm({
+    formState: { errors },
+    isSubmitting,
+    submitError,
+    submitSuccess,
+    clearAllErrors,
+    resetForm
+  } = useFormValidation({
+    schema: profileSetupSchema,
     mode: 'onBlur',
     defaultValues: {
       experienceLevel: user?.profile?.experienceLevel || 'Entry',
       targetRole: user?.profile?.targetRole || '',
       targetIndustry: user?.profile?.targetIndustry || ''
+    },
+    onSubmit: async (data) => {
+      dispatch(setLoading(true))
+      dispatch(setError(null))
+
+      try {
+        // Update user profile in database
+        const updatedProfile = await updateUser(user.$id, {
+          experienceLevel: data.experienceLevel,
+          targetRole: data.targetRole,
+          targetIndustry: data.targetIndustry
+        })
+
+        // Update Redux state
+        dispatch(setUser({
+          ...user,
+          profile: updatedProfile
+        }))
+
+        // Navigate to dashboard after a brief delay
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 1500)
+      } catch (error) {
+        dispatch(setError(error.message))
+        throw error // Re-throw to be handled by useFormValidation
+      } finally {
+        dispatch(setLoading(false))
+      }
+    },
+    onError: (error) => {
+      dispatch(setError(error.message || 'Profile setup failed. Please try again.'))
     }
   })
 
@@ -53,32 +93,7 @@ const ProfileSetup = () => {
     'Non-profit', 'Government', 'Automotive', 'Energy', 'Other'
   ]
 
-  const onSubmit = async (data) => {
-    try {
-      dispatch(setLoading(true))
-      dispatch(setError(null))
 
-      // Update user profile in database
-      const updatedProfile = await updateUser(user.$id, {
-        experienceLevel: data.experienceLevel,
-        targetRole: data.targetRole,
-        targetIndustry: data.targetIndustry
-      })
-
-      // Update Redux state
-      dispatch(setUser({
-        ...user,
-        profile: updatedProfile
-      }))
-
-      // Navigate to dashboard
-      navigate('/dashboard')
-    } catch (error) {
-      dispatch(setError(error.message))
-    } finally {
-      dispatch(setLoading(false))
-    }
-  }
 
   const nextStep = () => {
     if (currentStep < totalSteps) {
@@ -170,14 +185,41 @@ const ProfileSetup = () => {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <Card className="py-8 px-4 shadow-xl sm:px-10">
-            {/* Global Error Message */}
-            {error && (
+            {/* Success Message */}
+            {submitSuccess && (
               <div className="mb-6">
-                <ErrorMessage message={error} />
+                <SuccessMessage 
+                  message="Profile setup completed successfully! Redirecting to dashboard..."
+                  autoHide
+                  autoHideDelay={3000}
+                />
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)}>
+            {/* Error Messages */}
+            {(submitError || error) && (
+              <div className="mb-6">
+                <ErrorMessage 
+                  message={submitError || error}
+                  onClose={clearAllErrors}
+                  actions={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        clearAllErrors()
+                        dispatch(setError(null))
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                  }
+                />
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
               {/* Step 1: Experience Level */}
               {currentStep === 1 && (
                 <motion.div
@@ -213,7 +255,7 @@ const ProfileSetup = () => {
                             type="radio"
                             value={level.value}
                             className="sr-only"
-                            {...register('experienceLevel', { required: 'Please select your experience level' })}
+                            {...register('experienceLevel')}
                           />
                           <div className="flex-1">
                             <div className="font-medium text-gray-900 dark:text-white">
@@ -274,13 +316,7 @@ const ProfileSetup = () => {
                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                         `}
                         placeholder="e.g., Software Engineer, Product Manager"
-                        {...register('targetRole', {
-                          required: 'Please enter your target role',
-                          minLength: {
-                            value: 2,
-                            message: 'Role must be at least 2 characters'
-                          }
-                        })}
+                        {...register('targetRole')}
                       />
                       <datalist id="roles">
                         {commonRoles.map((role) => (
@@ -333,13 +369,7 @@ const ProfileSetup = () => {
                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                         `}
                         placeholder="e.g., Technology, Finance, Healthcare"
-                        {...register('targetIndustry', {
-                          required: 'Please enter your target industry',
-                          minLength: {
-                            value: 2,
-                            message: 'Industry must be at least 2 characters'
-                          }
-                        })}
+                        {...register('targetIndustry')}
                       />
                       <datalist id="industries">
                         {commonIndustries.map((industry) => (

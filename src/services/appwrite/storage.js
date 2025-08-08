@@ -5,16 +5,17 @@
 import { ID, Permission, Role } from 'appwrite'
 import { storage, appwriteConfig } from './client.js'
 import { handleAppwriteError } from '../../utils/errorHandling.js'
+import { 
+  isFileTypeSupported, 
+  getSupportedFileTypes, 
+  getSupportedFileExtensions,
+  getFileTypeDisplayName 
+} from '../../utils/textExtraction.js'
 
 const { storage: storageConfig } = appwriteConfig
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ALLOWED_FILE_TYPES = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-]
 
 /**
  * Validate file before upload
@@ -24,14 +25,10 @@ const ALLOWED_FILE_TYPES = [
 export const validateFile = (file) => {
   const errors = []
   
-  // Check file size
-  if (file.size > MAX_FILE_SIZE) {
-    errors.push(`File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`)
-  }
-  
-  // Check file type
-  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-    errors.push('File must be PDF, DOC, or DOCX format')
+  // Check if file exists
+  if (!file) {
+    errors.push('No file provided')
+    return { isValid: false, errors }
   }
   
   // Check file name
@@ -39,9 +36,26 @@ export const validateFile = (file) => {
     errors.push('File must have a valid name')
   }
   
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    errors.push(`File size must be less than ${MAX_FILE_SIZE / (1024 * 1024)}MB`)
+  }
+  
+  // Check if file is empty
+  if (file.size === 0) {
+    errors.push('File cannot be empty')
+  }
+  
+  // Check file type using our text extraction utilities
+  if (!isFileTypeSupported(file)) {
+    const supportedExtensions = getSupportedFileExtensions().join(', ')
+    errors.push(`File type not supported. Please upload: ${supportedExtensions}`)
+  }
+  
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
+    fileType: getFileTypeDisplayName(file)
   }
 }
 

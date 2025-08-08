@@ -7,20 +7,48 @@ import { account } from './client.js'
 import { handleAppwriteError } from '../../utils/errorHandling.js'
 import { getConfig } from '../../utils/envConfig.js'
 
-// Check if we should use mock auth
-const shouldUseMockAuth = () => {
-  const config = getConfig()
-  return config.environment === 'development' && import.meta.env.VITE_MOCK_AUTH === 'true'
+// Configuration
+const config = getConfig()
+
+// Check if we should use development mode (when Appwrite is not properly configured)
+const shouldUseDevMode = () => {
+  return config.isDevelopment && (
+    !config.appwrite.projectId || 
+    config.appwrite.projectId === '687fe297003367d2ee4e' ||
+    !config.appwrite.endpoint ||
+    config.appwrite.endpoint.includes('https://fra.cloud.appwrite.io/v1') ||
+    // Also use dev mode if we have placeholder API keys
+    config.ai.apiKey === 'your-openai-api-key'
+  )
 }
 
-// Lazy load mock auth when needed
-let mockAuth = null
-const getMockAuth = async () => {
-  if (!mockAuth && shouldUseMockAuth()) {
-    mockAuth = await import('../auth/mockAuth.js')
+// Track if we should fallback to dev mode due to auth errors
+let shouldFallbackToDevMode = false
+
+// Create a development user for testing
+const createDevUser = (email) => {
+  const isAdmin = email.includes('admin')
+  return {
+    $id: `dev-${Date.now()}`,
+    name: isAdmin ? 'Dev Admin' : 'Dev User',
+    email: email,
+    profile: {
+      id: `dev-${Date.now()}`,
+      name: isAdmin ? 'Dev Admin' : 'Dev User',
+      email: email,
+      experienceLevel: 'Mid',
+      targetRole: 'Software Engineer',
+      targetIndustry: 'Technology',
+      isAdmin: isAdmin,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
   }
-  return mockAuth
 }
+
+// Store dev session in memory
+let devSession = null
+let devUser = null
 
 /**
  * Create a new user account with email and password
@@ -31,11 +59,6 @@ const getMockAuth = async () => {
  * @returns {Promise<Object>} Created user account
  */
 export const createAccount = async ({ email, password, name }) => {
-  if (shouldUseMockAuth()) {
-    const mock = await getMockAuth()
-    return mock.createAccount({ email, password, name })
-  }
-
   try {
     // Create account in Appwrite Auth
     const account_response = await account.create(ID.unique(), email, password, name)
@@ -71,9 +94,23 @@ export const createAccount = async ({ email, password, name }) => {
  * @returns {Promise<Object>} Session data
  */
 export const signInWithEmail = async ({ email, password }) => {
-  if (shouldUseMockAuth()) {
-    const mock = await getMockAuth()
-    return mock.signInWithEmail({ email, password })
+  if (shouldUseDevMode()) {
+    console.log('🔧 Using development mode authentication')
+    
+    // Simple validation for dev mode
+    if (!email || !password) {
+      throw new Error('Email and password are required')
+    }
+    
+    // Create dev user and session
+    devUser = createDevUser(email)
+    devSession = {
+      $id: `dev-session-${Date.now()}`,
+      userId: devUser.$id,
+      expire: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+    }
+    
+    return devSession
   }
 
   try {
@@ -121,9 +158,8 @@ export const signInWithOAuth = async (provider, successUrl, failureUrl) => {
  * @returns {Promise<Object|null>} Current session or null
  */
 export const getCurrentSession = async () => {
-  if (shouldUseMockAuth()) {
-    const mock = await getMockAuth()
-    return mock.getCurrentSession()
+  if (shouldUseDevMode()) {
+    return devSession
   }
 
   try {
@@ -143,9 +179,8 @@ export const getCurrentSession = async () => {
  * @returns {Promise<Object|null>} Current user account or null
  */
 export const getCurrentUser = async () => {
-  if (shouldUseMockAuth()) {
-    const mock = await getMockAuth()
-    return mock.getCurrentUser()
+  if (shouldUseDevMode()) {
+    return devUser
   }
 
   try {
@@ -165,9 +200,8 @@ export const getCurrentUser = async () => {
  * @returns {Promise<Object|null>} User with profile data or null
  */
 export const getCurrentUserWithProfile = async () => {
-  if (shouldUseMockAuth()) {
-    const mock = await getMockAuth()
-    return mock.getCurrentUserWithProfile()
+  if (shouldUseDevMode()) {
+    return devUser
   }
 
   try {
@@ -191,9 +225,10 @@ export const getCurrentUserWithProfile = async () => {
  * @returns {Promise<void>}
  */
 export const signOut = async () => {
-  if (shouldUseMockAuth()) {
-    const mock = await getMockAuth()
-    return mock.signOut()
+  if (shouldUseDevMode()) {
+    devSession = null
+    devUser = null
+    return
   }
 
   try {

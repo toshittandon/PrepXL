@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
+import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -8,8 +10,49 @@ export default defineConfig(({ command, mode }) => {
   
   const isProduction = mode === 'production'
   
+  // Custom plugin to copy PDF.js worker file
+  const pdfWorkerPlugin = () => ({
+    name: 'pdf-worker',
+    buildStart() {
+      // Copy PDF.js worker to public directory at build start
+      try {
+        // Try multiple possible worker file locations
+        const possibleWorkerPaths = [
+          resolve('node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
+          resolve('node_modules/pdfjs-dist/build/pdf.worker.mjs'),
+          resolve('node_modules/pdfjs-dist/build/pdf.worker.min.js'),
+          resolve('node_modules/pdfjs-dist/build/pdf.worker.js')
+        ]
+        
+        const publicDir = resolve('public')
+        const workerDest = resolve(publicDir, 'pdf.worker.min.js')
+        
+        if (!existsSync(publicDir)) {
+          mkdirSync(publicDir, { recursive: true })
+        }
+        
+        let workerCopied = false
+        for (const workerSrc of possibleWorkerPaths) {
+          if (existsSync(workerSrc)) {
+            copyFileSync(workerSrc, workerDest)
+            console.log(`✓ PDF.js worker copied from ${workerSrc} to public directory`)
+            workerCopied = true
+            break
+          }
+        }
+        
+        if (!workerCopied) {
+          console.warn('Warning: PDF.js worker source file not found in any expected location')
+          console.warn('Checked paths:', possibleWorkerPaths)
+        }
+      } catch (error) {
+        console.warn('Warning: Could not copy PDF.js worker:', error.message)
+      }
+    }
+  })
+
   return {
-    plugins: [react()],
+    plugins: [react(), pdfWorkerPlugin()],
     server: {
       port: 3000,
       open: true
@@ -20,15 +63,65 @@ export default defineConfig(({ command, mode }) => {
       // Bundle optimization
       rollupOptions: {
         output: {
-          manualChunks: {
+          manualChunks: (id) => {
             // Vendor chunks for better caching
-            'react-vendor': ['react', 'react-dom'],
-            'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
-            'router-vendor': ['react-router-dom'],
-            'ui-vendor': ['@heroicons/react'],
-            'form-vendor': ['react-hook-form', '@hookform/resolvers', 'yup'],
-            // Separate chunk for Appwrite
-            'appwrite-vendor': ['appwrite'],
+            if (id.includes('node_modules')) {
+              // React ecosystem
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'react-vendor'
+              }
+              // Redux ecosystem
+              if (id.includes('@reduxjs/toolkit') || id.includes('react-redux') || id.includes('reselect')) {
+                return 'redux-vendor'
+              }
+              // Router
+              if (id.includes('react-router')) {
+                return 'router-vendor'
+              }
+              // Animation libraries
+              if (id.includes('framer-motion')) {
+                return 'animation-vendor'
+              }
+              // Chart libraries
+              if (id.includes('recharts')) {
+                return 'chart-vendor'
+              }
+              // Form libraries
+              if (id.includes('react-hook-form') || id.includes('@hookform/resolvers') || id.includes('yup')) {
+                return 'form-vendor'
+              }
+              // Icon libraries
+              if (id.includes('lucide-react') || id.includes('@heroicons/react')) {
+                return 'icon-vendor'
+              }
+              // Appwrite
+              if (id.includes('appwrite')) {
+                return 'appwrite-vendor'
+              }
+              // PDF processing
+              if (id.includes('pdfjs-dist') || id.includes('mammoth')) {
+                return 'pdf-vendor'
+              }
+              // Other large vendors
+              return 'vendor'
+            }
+            
+            // App chunks based on routes
+            if (id.includes('src/pages/admin')) {
+              return 'admin'
+            }
+            if (id.includes('src/pages/interview')) {
+              return 'interview'
+            }
+            if (id.includes('src/pages/resume')) {
+              return 'resume'
+            }
+            if (id.includes('src/pages/library')) {
+              return 'library'
+            }
+            if (id.includes('src/pages/auth')) {
+              return 'auth'
+            }
           },
           // Optimize chunk file names
           chunkFileNames: (chunkInfo) => {
@@ -74,12 +167,18 @@ export default defineConfig(({ command, mode }) => {
         'react-dom',
         '@reduxjs/toolkit',
         'react-redux',
+        'reselect',
         'react-router-dom',
         'react-hook-form',
-        '@heroicons/react/24/outline',
-        '@heroicons/react/24/solid'
+        'framer-motion',
+        'lucide-react',
+        'recharts',
+        'yup'
       ],
-      exclude: ['appwrite'] // Let Appwrite be bundled normally
+      exclude: [
+        'appwrite', // Let Appwrite be bundled normally
+        'pdfjs-dist' // PDF.js has special loading requirements
+      ]
     },
     // Environment variable handling
     define: {

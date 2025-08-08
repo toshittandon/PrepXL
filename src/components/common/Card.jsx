@@ -1,7 +1,8 @@
-import { forwardRef } from 'react'
+import { forwardRef, memo } from 'react'
 import { motion } from 'framer-motion'
+import { cardHoverVariants } from '../../utils/animations'
 
-const Card = forwardRef(({
+const Card = memo(forwardRef(({
   children,
   className = '',
   variant = 'default',
@@ -23,25 +24,25 @@ const Card = forwardRef(({
   }
 
   const baseClasses = `
-    rounded-xl transition-all duration-200
+    rounded-xl shadow-md
     ${variants[variant]}
     ${paddings[padding]}
-    ${hover ? 'hover:shadow-md hover:-translate-y-0.5' : ''}
     ${className}
   `
 
-  const MotionCard = motion.div
-
   return (
-    <MotionCard
+    <motion.div
       ref={ref}
       className={baseClasses}
+      variants={hover ? cardHoverVariants : undefined}
+      initial={hover ? "rest" : undefined}
+      whileHover={hover ? "hover" : undefined}
       {...props}
     >
       {children}
-    </MotionCard>
+    </motion.div>
   )
-})
+}))
 
 Card.displayName = 'Card'
 

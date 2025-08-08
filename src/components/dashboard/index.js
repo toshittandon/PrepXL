@@ -1,0 +1,6 @@
+export { default as DashboardLayout } from './DashboardLayout.jsx'
+export { default as AnalyticsCards } from './AnalyticsCards.jsx'
+export { default as SessionHistory } from './SessionHistory.jsx'
+export { default as QuickActions } from './QuickActions.jsx'
+export { default as UserProfile } from './UserProfile.jsx'
+export { default as ProgressChart } from './ProgressChart.jsx'

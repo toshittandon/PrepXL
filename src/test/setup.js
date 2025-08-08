@@ -61,6 +61,21 @@ Object.defineProperty(navigator, 'userAgent', {
   writable: true
 })
 
+// Mock matchMedia for theme system
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+})
+
 // Setup cleanup after each test
 afterEach(() => {
   vi.clearAllMocks()

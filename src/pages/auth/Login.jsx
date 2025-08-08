@@ -67,14 +67,35 @@ const Login = () => {
         >
           <Card className="py-8 px-4 shadow-xl sm:px-10">
             {/* Development Helper */}
-            {import.meta.env.VITE_MOCK_AUTH === 'true' && (
+            {import.meta.env.DEV && (
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                  Development Mode - Mock Authentication
+                  Development Mode - Quick Login
                 </h3>
-                <div className="text-xs text-blue-600 dark:text-blue-300 space-y-1">
-                  <p><strong>Admin:</strong> admin@interviewprep.com / admin123</p>
-                  <p><strong>User:</strong> user@interviewprep.com / user123</p>
+                <div className="text-xs text-blue-600 dark:text-blue-300 space-y-2">
+                  <p>Use any email/password combination to log in during development.</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        document.getElementById('email').value = 'admin@test.com'
+                        document.getElementById('password').value = 'password123'
+                      }}
+                      className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    >
+                      Fill Admin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        document.getElementById('email').value = 'user@test.com'
+                        document.getElementById('password').value = 'password123'
+                      }}
+                      className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                    >
+                      Fill User
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

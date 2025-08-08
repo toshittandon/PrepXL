@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 
-const LoadingSpinner = ({ 
+const LoadingSpinner = memo(({ 
   size = 'md', 
   color = 'current', 
   className = '' 
@@ -50,6 +51,8 @@ const LoadingSpinner = ({
       </svg>
     </motion.div>
   )
-}
+})
+
+LoadingSpinner.displayName = 'LoadingSpinner'
 
 export default LoadingSpinner

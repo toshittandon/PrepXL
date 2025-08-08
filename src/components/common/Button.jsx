@@ -1,8 +1,9 @@
-import { forwardRef } from 'react'
+import { forwardRef, memo } from 'react'
 import { motion } from 'framer-motion'
 import LoadingSpinner from './LoadingSpinner.jsx'
+import { buttonVariants } from '../../utils/animations'
 
-const Button = forwardRef(({
+const Button = memo(forwardRef(({
   children,
   variant = 'primary',
   size = 'md',
@@ -57,8 +58,10 @@ const Button = forwardRef(({
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={isDisabled}
       onClick={onClick}
-      whileHover={!isDisabled ? { scale: 1.02 } : {}}
-      whileTap={!isDisabled ? { scale: 0.98 } : {}}
+      variants={buttonVariants}
+      initial="rest"
+      whileHover={!isDisabled ? "hover" : "rest"}
+      whileTap={!isDisabled ? "tap" : "rest"}
       {...props}
     >
       {loading && (
@@ -71,7 +74,7 @@ const Button = forwardRef(({
       {children}
     </motion.button>
   )
-})
+}))
 
 Button.displayName = 'Button'
 

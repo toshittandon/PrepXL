@@ -12,6 +12,9 @@ import uiSlice from './slices/uiSlice'
 import { appwriteApi } from './api/appwriteApi'
 import { aiApi } from './api/aiApi'
 
+// Import error handling middleware
+import { rtkQueryErrorLogger } from '../utils/apiErrorHandler'
+
 export const store = configureStore({
   reducer: {
     // Add slices
@@ -43,7 +46,9 @@ export const store = configureStore({
     })
     // Add API middleware
     .concat(appwriteApi.middleware)
-    .concat(aiApi.middleware),
+    .concat(aiApi.middleware)
+    // Add error handling middleware
+    .concat(rtkQueryErrorLogger),
 })
 
 // Export store for use in components
