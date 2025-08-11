@@ -6,9 +6,11 @@ import LoginForm from '../../components/forms/LoginForm.jsx'
 import OAuthButtons from '../../components/forms/OAuthButtons.jsx'
 import ErrorMessage from '../../components/common/ErrorMessage.jsx'
 import Card from '../../components/common/Card.jsx'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const Login = () => {
   const { error } = useSelector((state) => state.auth)
+  const { theme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -50,11 +52,16 @@ const Login = () => {
           transition={{ duration: 0.3, delay: 0.1 }}
           className="text-center"
         >
+          <img 
+            src={theme === 'dark' ? "/logo/logolight.png" : "/logo/logodark.png"} 
+            alt="PrepXL Logo" 
+            className="h-12 w-auto mx-auto mb-6"
+          />
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome Back
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Sign in to your InterviewPrep AI account
+            Sign in to your PrepXL account
           </p>
         </motion.div>
       </div>
@@ -66,39 +73,7 @@ const Login = () => {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <Card className="py-8 px-4 shadow-xl sm:px-10">
-            {/* Development Helper */}
-            {import.meta.env.DEV && (
-              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-                  Development Mode - Quick Login
-                </h3>
-                <div className="text-xs text-blue-600 dark:text-blue-300 space-y-2">
-                  <p>Use any email/password combination to log in during development.</p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        document.getElementById('email').value = 'admin@test.com'
-                        document.getElementById('password').value = 'password123'
-                      }}
-                      className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                    >
-                      Fill Admin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        document.getElementById('email').value = 'user@test.com'
-                        document.getElementById('password').value = 'password123'
-                      }}
-                      className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-                    >
-                      Fill User
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Development helper removed for production */}
 
             {/* Global Error Message */}
             {error && (
@@ -123,7 +98,7 @@ const Login = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    New to InterviewPrep AI?
+                    New to PrepXL?
                   </span>
                 </div>
               </div>

@@ -1,8 +1,10 @@
 
 import { Link } from 'react-router-dom'
 import { Heart, Github, Twitter, Linkedin } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const Footer = () => {
+  const { theme } = useTheme()
   const currentYear = new Date().getFullYear()
 
   const footerLinks = {
@@ -38,15 +40,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">IP</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  InterviewPrep AI Complete
-                </h3>
-              </div>
+            <div className="flex items-center mb-4">
+              <img 
+                src={theme === 'dark' ? "/logo/logolight.png" : "/logo/logodark.png"} 
+                alt="PrepXL Logo" 
+                className="h-8 w-auto"
+              />
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 max-w-md">
               AI-powered interview preparation platform designed to help students and professionals 
@@ -132,7 +131,7 @@ const Footer = () => {
         <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-              <span>© {currentYear} InterviewPrep AI Complete.</span>
+              <span>© {currentYear} PrepXL.</span>
               <span>Made with</span>
               <Heart className="w-4 h-4 text-red-500" />
               <span>for job seekers worldwide.</span>

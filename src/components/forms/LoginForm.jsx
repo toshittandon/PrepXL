@@ -1,18 +1,69 @@
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
-import { signInWithEmail } from '../../services/appwrite/auth.js'
-import { setUser, setSession, setError, setLoading } from '../../store/slices/authSlice.js'
+import { Eye, EyeOff, Mail, Lock, RefreshCw, AlertTriangle } from 'lucide-react'
+import { signInWithEmail, signOutFromAllSessions } from '../../services/appwrite/auth.js'
+import { 
+  setUser, 
+  setSession, 
+  setError, 
+  setLoading,
+  sessionConflictStart,
+  sessionConflictResolved,
+  sessionConflictFailed,
+  clearSessionConflictResolution,
+  selectSessionConflictResolution,
+  selectIsSessionConflictInProgress,
+  selectSessionConflictMethod
+} from '../../store/slices/authSlice.js'
 import Button from '../common/Button.jsx'
 import ErrorMessage from '../common/ErrorMessage.jsx'
 import SuccessMessage from '../common/SuccessMessage.jsx'
 import { useFormValidation } from '../../hooks/useFormValidation.js'
 import { loginSchema } from '../../utils/validationSchemas.js'
+import { 
+  getSessionConflictUserMessage, 
+  SESSION_CONFLICT_TYPES,
+  createSessionConflictError 
+} from '../../utils/errorHandling.js'
 
 const LoginForm = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false)
+  const [manualClearAttempted, setManualClearAttempted] = useState(false)
   const dispatch = useDispatch()
+  
+  // Session conflict resolution state
+  const sessionConflictResolution = useSelector(selectSessionConflictResolution)
+  const isSessionConflictInProgress = useSelector(selectIsSessionConflictInProgress)
+  const sessionConflictMethod = useSelector(selectSessionConflictMethod)
+
+  // Manual session clearing handler
+  const handleManualSessionClear = async () => {
+    try {
+      setManualClearAttempted(true)
+      dispatch(setLoading(true))
+      dispatch(setError(null))
+      dispatch(sessionConflictStart({ method: 'ALL' }))
+      
+      await signOutFromAllSessions()
+      
+      dispatch(sessionConflictResolved({ method: 'ALL' }))
+      dispatch(setError(null))
+      
+      // Clear the manual clear flag after successful clearing
+      setTimeout(() => {
+        setManualClearAttempted(false)
+        dispatch(clearSessionConflictResolution())
+      }, 2000)
+      
+    } catch (error) {
+      dispatch(sessionConflictFailed())
+      dispatch(setError('Failed to clear all sessions. Please try again or contact support.'))
+      setManualClearAttempted(false)
+    } finally {
+      dispatch(setLoading(false))
+    }
+  }
 
   const {
     register,
@@ -29,11 +80,13 @@ const LoginForm = ({ onSuccess }) => {
     onSubmit: async (data) => {
       dispatch(setLoading(true))
       dispatch(setError(null))
+      dispatch(clearSessionConflictResolution())
       
       try {
         const session = await signInWithEmail({
           email: data.email,
-          password: data.password
+          password: data.password,
+          dispatch: dispatch
         })
         
         dispatch(setSession(session))
@@ -47,7 +100,18 @@ const LoginForm = ({ onSuccess }) => {
           onSuccess(userWithProfile)
         }
       } catch (error) {
-        dispatch(setError(error.message))
+        // Handle session conflict errors specifically
+        if (error.isSessionConflict) {
+          const conflictMessage = getSessionConflictUserMessage(error)
+          dispatch(setError(conflictMessage.message))
+          
+          // Set appropriate session conflict state
+          if (error.conflictType === SESSION_CONFLICT_TYPES.ALL_SESSIONS_CLEAR_FAILED) {
+            dispatch(sessionConflictFailed())
+          }
+        } else {
+          dispatch(setError(error.message))
+        }
         throw error // Re-throw to be handled by useFormValidation
       } finally {
         dispatch(setLoading(false))
@@ -55,7 +119,10 @@ const LoginForm = ({ onSuccess }) => {
     },
     onError: (error) => {
       // Handle specific authentication errors
-      if (error.message?.includes('Invalid credentials')) {
+      if (error.isSessionConflict) {
+        const conflictMessage = getSessionConflictUserMessage(error)
+        dispatch(setError(conflictMessage.message))
+      } else if (error.message?.includes('Invalid credentials')) {
         dispatch(setError('Invalid email or password. Please try again.'))
       } else if (error.message?.includes('Too many requests')) {
         dispatch(setError('Too many login attempts. Please try again later.'))
@@ -82,20 +149,102 @@ const LoginForm = ({ onSuccess }) => {
         />
       )}
 
-      {/* Error Message */}
+      {/* Session Conflict Resolution Status */}
+      {isSessionConflictInProgress && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+        >
+          <div className="flex items-center space-x-3">
+            <RefreshCw className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Resolving Session Conflict
+              </h4>
+              <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                {sessionConflictMethod === 'CURRENT' 
+                  ? 'Clearing current session and logging you in...'
+                  : sessionConflictMethod === 'ALL'
+                  ? 'Clearing all sessions for security and logging you in...'
+                  : 'Detecting session conflict and resolving...'
+                }
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Session Conflict Resolution Success */}
+      {sessionConflictResolution.resolved && !isSessionConflictInProgress && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-green-800 dark:text-green-200">
+                Session Conflict Resolved
+              </h4>
+              <p className="text-sm text-green-600 dark:text-green-300 mt-1">
+                {sessionConflictMethod === 'ALL' 
+                  ? 'All sessions cleared successfully. You can now log in.'
+                  : 'Previous session cleared successfully. You can now log in.'
+                }
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Error Message with Session Conflict Recovery Options */}
       {submitError && (
         <ErrorMessage 
           message={submitError}
           onClose={clearAllErrors}
           actions={
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={resetForm}
-            >
-              Try Again
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={resetForm}
+              >
+                Try Again
+              </Button>
+              {/* Show manual session clear option for session conflict failures */}
+              {submitError.includes('session conflict') || submitError.includes('Session conflict') ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleManualSessionClear}
+                  loading={manualClearAttempted}
+                  disabled={manualClearAttempted}
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-orange-900/20"
+                >
+                  {manualClearAttempted ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Clearing Sessions...
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="w-4 h-4 mr-2" />
+                      Clear All Sessions
+                    </>
+                  )}
+                </Button>
+              ) : null}
+            </div>
           }
         />
       )}

@@ -30,11 +30,14 @@ jobs:
     - name: Run linter
       run: echo "Linting temporarily disabled"
 
+    - name: Run integration validation
+      run: npm run validate
+
     - name: Run unit tests
       run: npm run test:run
 
-    - name: Build application
-      run: npm run build:production
+    - name: Build application with performance monitoring
+      run: npm run build:monitor
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

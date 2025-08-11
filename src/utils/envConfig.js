@@ -1,182 +1,159 @@
 /**
- * Environment configuration validation and utilities
+ * Environment Configuration Utilities
+ * Centralized configuration management for different environments
  */
 
-// Required environment variables for each environment
-const REQUIRED_ENV_VARS = {
-  development: [
-    'VITE_APPWRITE_ENDPOINT',
-    'VITE_APPWRITE_PROJECT_ID',
-    'VITE_APPWRITE_DATABASE_ID',
-    'VITE_APPWRITE_USERS_COLLECTION_ID',
-    'VITE_APPWRITE_RESUMES_COLLECTION_ID',
-    'VITE_APPWRITE_SESSIONS_COLLECTION_ID',
-    'VITE_APPWRITE_INTERACTIONS_COLLECTION_ID',
-    'VITE_APPWRITE_QUESTIONS_COLLECTION_ID',
-    'VITE_APPWRITE_STORAGE_BUCKET_ID',
-  ],
-  staging: [
-    'VITE_APPWRITE_ENDPOINT',
-    'VITE_APPWRITE_PROJECT_ID',
-    'VITE_APPWRITE_DATABASE_ID',
-    'VITE_APPWRITE_USERS_COLLECTION_ID',
-    'VITE_APPWRITE_RESUMES_COLLECTION_ID',
-    'VITE_APPWRITE_SESSIONS_COLLECTION_ID',
-    'VITE_APPWRITE_INTERACTIONS_COLLECTION_ID',
-    'VITE_APPWRITE_QUESTIONS_COLLECTION_ID',
-    'VITE_APPWRITE_STORAGE_BUCKET_ID',
-    'VITE_AI_API_BASE_URL',
-    'VITE_AI_API_KEY',
-  ],
-  production: [
-    'VITE_APPWRITE_ENDPOINT',
-    'VITE_APPWRITE_PROJECT_ID',
-    'VITE_APPWRITE_DATABASE_ID',
-    'VITE_APPWRITE_USERS_COLLECTION_ID',
-    'VITE_APPWRITE_RESUMES_COLLECTION_ID',
-    'VITE_APPWRITE_SESSIONS_COLLECTION_ID',
-    'VITE_APPWRITE_INTERACTIONS_COLLECTION_ID',
-    'VITE_APPWRITE_QUESTIONS_COLLECTION_ID',
-    'VITE_APPWRITE_STORAGE_BUCKET_ID',
-    'VITE_AI_API_BASE_URL',
-    'VITE_AI_API_KEY',
-    'VITE_SENTRY_DSN',
-    'VITE_GA_TRACKING_ID',
-  ],
-};
-
-// Get current environment
+// Environment detection
 export const getEnvironment = () => {
   return import.meta.env.VITE_APP_ENVIRONMENT || 'development';
 };
 
-// Check if running in production
-export const isProduction = () => {
-  return getEnvironment() === 'production';
+export const isDevelopment = () => getEnvironment() === 'development';
+export const isStaging = () => getEnvironment() === 'staging';
+export const isProduction = () => getEnvironment() === 'production';
+
+// Application configuration
+export const appConfig = {
+  name: import.meta.env.VITE_APP_NAME || 'PrepXL',
+  version: import.meta.env.VITE_APP_VERSION || '1.0.0',
+  environment: getEnvironment(),
+  debug: import.meta.env.VITE_APP_DEBUG === 'true',
+  buildTime: import.meta.env.__BUILD_TIME__ || new Date().toISOString(),
 };
 
-// Check if running in development
-export const isDevelopment = () => {
-  return getEnvironment() === 'development';
+// Appwrite configuration
+export const appwriteConfig = {
+  endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT,
+  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID,
+  databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID,
+  collections: {
+    users: import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID,
+    resumes: import.meta.env.VITE_APPWRITE_RESUMES_COLLECTION_ID,
+    sessions: import.meta.env.VITE_APPWRITE_SESSIONS_COLLECTION_ID,
+    interactions: import.meta.env.VITE_APPWRITE_INTERACTIONS_COLLECTION_ID,
+    questions: import.meta.env.VITE_APPWRITE_QUESTIONS_COLLECTION_ID,
+  },
+  storage: {
+    bucketId: import.meta.env.VITE_APPWRITE_STORAGE_BUCKET_ID,
+  },
 };
 
-// Check if running in staging
-export const isStaging = () => {
-  return getEnvironment() === 'staging';
+// AI API configuration
+export const aiConfig = {
+  baseUrl: import.meta.env.VITE_AI_API_BASE_URL,
+  apiKey: import.meta.env.VITE_AI_API_KEY,
+  mockResponses: import.meta.env.VITE_MOCK_AI_RESPONSES === 'true',
 };
 
-// Validate environment variables
+// OAuth configuration
+export const oauthConfig = {
+  google: {
+    clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+  },
+  linkedin: {
+    clientId: import.meta.env.VITE_LINKEDIN_CLIENT_ID,
+  },
+};
+
+// Feature flags
+export const featureFlags = {
+  speechRecognition: import.meta.env.VITE_ENABLE_SPEECH_RECOGNITION === 'true',
+  oauthLogin: import.meta.env.VITE_ENABLE_OAUTH_LOGIN === 'true',
+  analytics: import.meta.env.VITE_ENABLE_ANALYTICS === 'true',
+  debugTools: import.meta.env.VITE_ENABLE_DEBUG_TOOLS === 'true',
+  errorReporting: import.meta.env.VITE_ENABLE_ERROR_REPORTING === 'true',
+};
+
+// Monitoring configuration
+export const monitoringConfig = {
+  sentry: {
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    enabled: featureFlags.errorReporting && !!import.meta.env.VITE_SENTRY_DSN,
+    environment: getEnvironment(),
+    release: appConfig.version,
+  },
+  analytics: {
+    googleAnalytics: {
+      trackingId: import.meta.env.VITE_GA_TRACKING_ID,
+      enabled: featureFlags.analytics && !!import.meta.env.VITE_GA_TRACKING_ID,
+    },
+    hotjar: {
+      id: import.meta.env.VITE_HOTJAR_ID,
+      enabled: featureFlags.analytics && !!import.meta.env.VITE_HOTJAR_ID,
+    },
+  },
+};
+
+// Logging configuration
+export const loggingConfig = {
+  level: import.meta.env.VITE_LOG_LEVEL || 'info',
+  enableConsole: isDevelopment() || import.meta.env.VITE_APP_DEBUG === 'true',
+};
+
+// Validation function to check required environment variables
 export const validateEnvironment = () => {
-  const environment = getEnvironment();
-  const requiredVars = REQUIRED_ENV_VARS[environment] || REQUIRED_ENV_VARS.development;
-  const missingVars = [];
+  const requiredVars = [
+    'VITE_APPWRITE_ENDPOINT',
+    'VITE_APPWRITE_PROJECT_ID',
+    'VITE_APPWRITE_DATABASE_ID',
+  ];
 
-  requiredVars.forEach(varName => {
-    if (!import.meta.env[varName]) {
-      missingVars.push(varName);
-    }
-  });
+  const missingVars = requiredVars.filter(varName => !import.meta.env[varName]);
 
   if (missingVars.length > 0) {
-    const errorMessage = `Missing required environment variables for ${environment}:\n${missingVars.join('\n')}`;
+    const error = `Missing required environment variables: ${missingVars.join(', ')}`;
+    console.error('❌ Environment Configuration Error:', error);
     
     if (isProduction()) {
-      throw new Error(errorMessage);
+      throw new Error(error);
     } else {
-      console.warn(errorMessage);
+      console.warn('⚠️ Continuing in development mode with missing variables');
     }
   }
 
-  return missingVars.length === 0;
-};
-
-// Get configuration object
-export const getConfig = () => {
   return {
-    // Environment
-    environment: getEnvironment(),
-    isProduction: isProduction(),
-    isDevelopment: isDevelopment(),
-    isStaging: isStaging(),
-    
-    // App info
-    appName: import.meta.env.VITE_APP_NAME || 'InterviewPrep AI',
-    appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
-    buildTime: __BUILD_TIME__ || new Date().toISOString(),
-    
-    // Appwrite
-    appwrite: {
-      endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT,
-      projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID,
-      databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID,
-      collections: {
-        users: import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID,
-        resumes: import.meta.env.VITE_APPWRITE_RESUMES_COLLECTION_ID,
-        sessions: import.meta.env.VITE_APPWRITE_SESSIONS_COLLECTION_ID,
-        interactions: import.meta.env.VITE_APPWRITE_INTERACTIONS_COLLECTION_ID,
-        questions: import.meta.env.VITE_APPWRITE_QUESTIONS_COLLECTION_ID,
-      },
-      storage: {
-        bucketId: import.meta.env.VITE_APPWRITE_STORAGE_BUCKET_ID,
-      },
-    },
-    
-    // AI API
-    ai: {
-      baseUrl: import.meta.env.VITE_AI_API_BASE_URL,
-      apiKey: import.meta.env.VITE_AI_API_KEY,
-    },
-    
-    // OAuth
-    oauth: {
-      google: {
-        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      },
-      linkedin: {
-        clientId: import.meta.env.VITE_LINKEDIN_CLIENT_ID,
-      },
-    },
-    
-    // Feature flags
-    features: {
-      speechRecognition: import.meta.env.VITE_ENABLE_SPEECH_RECOGNITION === 'true',
-      oauthLogin: import.meta.env.VITE_ENABLE_OAUTH_LOGIN === 'true',
-      analytics: import.meta.env.VITE_ENABLE_ANALYTICS === 'true',
-      debugTools: import.meta.env.VITE_ENABLE_DEBUG_TOOLS === 'true',
-      errorReporting: import.meta.env.VITE_ENABLE_ERROR_REPORTING === 'true',
-    },
-    
-    // Development
-    debug: import.meta.env.VITE_APP_DEBUG === 'true',
-    mockAiResponses: import.meta.env.VITE_MOCK_AI_RESPONSES === 'true',
-    logLevel: import.meta.env.VITE_LOG_LEVEL || 'info',
-    
-    // Monitoring
-    monitoring: {
-      sentryDsn: import.meta.env.VITE_SENTRY_DSN,
-      gaTrackingId: import.meta.env.VITE_GA_TRACKING_ID,
-      hotjarId: import.meta.env.VITE_HOTJAR_ID,
-    },
+    isValid: missingVars.length === 0,
+    missingVars,
   };
 };
 
-// Log configuration (development only)
-export const logConfig = () => {
-  if (isDevelopment()) {
-    const config = getConfig();
-    console.group('🔧 Application Configuration');
-    console.log('Environment:', config.environment);
-    console.log('Version:', config.appVersion);
-    console.log('Build Time:', config.buildTime);
-    console.log('Features:', config.features);
-    console.log('Debug Mode:', config.debug);
-    console.groupEnd();
-  }
+// Export all configurations as a single object
+export const config = {
+  app: appConfig,
+  appwrite: appwriteConfig,
+  ai: aiConfig,
+  oauth: oauthConfig,
+  features: featureFlags,
+  monitoring: monitoringConfig,
+  logging: loggingConfig,
+  environment: {
+    current: getEnvironment(),
+    isDevelopment: isDevelopment(),
+    isStaging: isStaging(),
+    isProduction: isProduction(),
+  },
 };
 
-// Initialize configuration
+// Alias for backward compatibility
+export const getConfig = () => config;
+
+// Initialize configuration (for main.jsx compatibility)
 export const initConfig = () => {
-  validateEnvironment();
-  logConfig();
-  return getConfig();
+  // Configuration is already initialized when this module loads
+  if (isDevelopment()) {
+    console.log('🔧 Configuration initialized');
+  }
+  return config;
 };
+
+// Development helper to log configuration (only in development)
+if (isDevelopment() && loggingConfig.enableConsole) {
+  console.group('🔧 Environment Configuration');
+  console.log('Environment:', getEnvironment());
+  console.log('App Version:', appConfig.version);
+  console.log('Debug Mode:', appConfig.debug);
+  console.log('Feature Flags:', featureFlags);
+  console.groupEnd();
+}
+
+export default config;

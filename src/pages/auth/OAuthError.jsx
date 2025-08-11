@@ -4,9 +4,11 @@ import { motion } from 'framer-motion'
 import { AlertCircle, ArrowLeft } from 'lucide-react'
 import Button from '../../components/common/Button.jsx'
 import Card from '../../components/common/Card.jsx'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const OAuthError = () => {
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   useEffect(() => {
     // Auto-redirect to login after 10 seconds
@@ -27,12 +29,17 @@ const OAuthError = () => {
         >
           <Card className="py-8 px-4 shadow-xl sm:px-10 text-center">
             <div className="mb-6">
+              <img 
+                src={theme === 'dark' ? "/logo/logolight.png" : "/logo/logodark.png"} 
+                alt="PrepXL Logo" 
+                className="h-8 w-auto mx-auto mb-6"
+              />
               <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Authentication Failed
               </h2>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                We couldn't complete your sign-in with the selected provider.
+                We couldn't complete your sign-in with PrepXL using the selected provider.
               </p>
             </div>
 

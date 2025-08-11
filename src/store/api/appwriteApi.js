@@ -46,10 +46,18 @@ export const appwriteApi = createApi({
     getResumes: builder.query({
       queryFn: async (userId) => {
         try {
+          // Validate session before making API call
+          const { validateAndGetUserId } = await import('../../utils/sessionValidator.js')
+          const validatedUserId = await validateAndGetUserId()
+          
           const { getUserResumes } = await import('../../services/appwrite/database.js')
-          const result = await getUserResumes(userId)
+          const result = await getUserResumes(validatedUserId || userId)
           return { data: result.documents || [] }
         } catch (error) {
+          // Handle authentication errors specifically
+          if (error.code === 401 || error.message?.includes('Authentication required')) {
+            return { error: { status: 401, error: 'Authentication required' } }
+          }
           return { error: { status: 'FETCH_ERROR', error: error.message } }
         }
       },
@@ -102,10 +110,18 @@ export const appwriteApi = createApi({
     getInterviewSessions: builder.query({
       queryFn: async (userId) => {
         try {
+          // Validate session before making API call
+          const { validateAndGetUserId } = await import('../../utils/sessionValidator.js')
+          const validatedUserId = await validateAndGetUserId()
+          
           const { getInterviewSessionsByUserId } = await import('../../services/appwrite/database.js')
-          const result = await getInterviewSessionsByUserId(userId)
+          const result = await getInterviewSessionsByUserId(validatedUserId || userId)
           return { data: result.documents || [] }
         } catch (error) {
+          // Handle authentication errors specifically
+          if (error.code === 401 || error.message?.includes('Authentication required')) {
+            return { error: { status: 401, error: 'Authentication required' } }
+          }
           return { error: { status: 'FETCH_ERROR', error: error.message } }
         }
       },

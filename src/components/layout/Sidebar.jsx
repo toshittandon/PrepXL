@@ -11,10 +11,12 @@ import {
   X
 } from 'lucide-react'
 import { useSelector } from 'react-redux'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation()
   const { user } = useSelector((state) => state.auth)
+  const { theme } = useTheme()
 
   const navigationItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -115,18 +117,12 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">IP</span>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      InterviewPrep AI
-                    </h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
-                      Complete
-                    </p>
-                  </div>
+                <div className="flex items-center">
+                  <img 
+                    src={theme === 'dark' ? "/logo/logolight.png" : "/logo/logodark.png"} 
+                    alt="PrepXL Logo" 
+                    className="h-8 w-auto"
+                  />
                 </div>
                 <button
                   onClick={onClose}
@@ -201,7 +197,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               {/* Footer */}
               <div className="p-6 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  InterviewPrep AI Complete
+                  PrepXL
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-1">
                   Version 1.0.0

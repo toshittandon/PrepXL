@@ -8,13 +8,13 @@ import { categorizeError, getErrorSeverity } from '../utils/errorUtils'
 // Configuration for error logging
 const ERROR_LOGGING_CONFIG = {
   // In production, replace with actual service URLs
-  sentryDsn: process.env.VITE_SENTRY_DSN,
-  logRocketAppId: process.env.VITE_LOGROCKET_APP_ID,
-  bugsnagApiKey: process.env.VITE_BUGSNAG_API_KEY,
+  sentryDsn: import.meta.env.VITE_SENTRY_DSN,
+  logRocketAppId: import.meta.env.VITE_LOGROCKET_APP_ID,
+  bugsnagApiKey: import.meta.env.VITE_BUGSNAG_API_KEY,
   
   // Local logging configuration
-  enableConsoleLogging: process.env.NODE_ENV === 'development',
-  enableRemoteLogging: process.env.NODE_ENV === 'production',
+  enableConsoleLogging: import.meta.env.DEV,
+  enableRemoteLogging: import.meta.env.PROD,
   
   // Sampling rates (0-1)
   errorSamplingRate: 1.0, // Log all errors

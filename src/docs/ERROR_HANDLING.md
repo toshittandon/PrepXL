@@ -1,6 +1,6 @@
 # Comprehensive Error Handling System
 
-This document describes the comprehensive error handling and user feedback system implemented in the InterviewPrep AI application.
+This document describes the comprehensive error handling and user feedback system implemented in the PrepXL application.
 
 ## Overview
 

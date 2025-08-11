@@ -38,9 +38,11 @@ const AuthGuard = ({
           dispatch(setSession(session))
         }
       } catch (error) {
-        // User is not authenticated, which is expected for first-time visitors
-        // Only log non-authentication errors
-        if (error.code !== 401 && !error.message?.includes('Authentication required')) {
+        // Clear any stale user data on authentication errors
+        if (error.code === 401 || error.message?.includes('Authentication required')) {
+          dispatch(setUser(null))
+          dispatch(setSession(null))
+        } else {
           console.error('Auth initialization error:', error)
         }
       } finally {

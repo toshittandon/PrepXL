@@ -16,15 +16,37 @@ import { selectUser } from '../../store/selectors'
 const AnalyticsCards = memo(() => {
   const user = useSelector(selectUser)
   
-  // Fetch user data
-  const { data: sessions = [], isLoading: sessionsLoading } = useGetInterviewSessionsQuery(
+  // Fetch user data with error handling
+  const { 
+    data: sessions = [], 
+    isLoading: sessionsLoading,
+    error: sessionsError 
+  } = useGetInterviewSessionsQuery(
     user?.id, 
-    { skip: !user?.id }
+    { 
+      skip: !user?.id,
+      // Don't show error notifications for auth errors - let AuthErrorBoundary handle them
+      refetchOnMountOrArgChange: true
+    }
   )
-  const { data: resumes = [], isLoading: resumesLoading } = useGetResumesQuery(
+  const { 
+    data: resumes = [], 
+    isLoading: resumesLoading,
+    error: resumesError 
+  } = useGetResumesQuery(
     user?.id, 
-    { skip: !user?.id }
+    { 
+      skip: !user?.id,
+      // Don't show error notifications for auth errors - let AuthErrorBoundary handle them
+      refetchOnMountOrArgChange: true
+    }
   )
+
+  // If there are authentication errors, don't render the component
+  // Let the AuthErrorBoundary handle the session recovery
+  if (sessionsError?.status === 401 || resumesError?.status === 401) {
+    return null
+  }
 
   // Calculate analytics
   const completedSessions = sessions.filter(session => session.status === 'completed')

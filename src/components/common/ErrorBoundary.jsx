@@ -93,7 +93,7 @@ Technical Details:
 ${errorDetails.stack}
     `)
 
-    window.open(`mailto:support@interviewprep.ai?subject=${subject}&body=${body}`)
+    window.open(`mailto:support@prepxl.ai?subject=${subject}&body=${body}`)
   }
 
   render() {

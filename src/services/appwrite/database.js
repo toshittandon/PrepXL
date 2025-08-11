@@ -20,27 +20,50 @@ const { databaseId, collections } = appwriteConfig
  */
 export const createUser = async (userData) => {
   try {
+    console.log('Creating user with data:', userData)
+    
     // Validate user data
     const validatedData = await validateUserData(userData)
+    console.log('Validated user data:', validatedData)
+    
+    const userId = userData.id || ID.unique()
+    
+    // Create document data with only the fields that exist in the collection
+    const documentData = {
+      name: validatedData.name,
+      email: validatedData.email,
+      experienceLevel: validatedData.experienceLevel,
+      targetRole: validatedData.targetRole || '',
+      targetIndustry: validatedData.targetIndustry || '',
+      isAdmin: validatedData.isAdmin || false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    
+    console.log('Final document data:', documentData)
     
     const user = await databases.createDocument(
       databaseId,
       collections.users,
-      userData.id || ID.unique(),
-      {
-        ...validatedData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
+      userId,
+      documentData,
       [
-        Permission.read(Role.user(userData.id)),
-        Permission.update(Role.user(userData.id)),
-        Permission.delete(Role.user(userData.id)),
+        Permission.read(Role.user(userId)),
+        Permission.update(Role.user(userId)),
+        Permission.delete(Role.user(userId)),
       ]
     )
     
+    console.log('User created successfully:', user)
     return user
   } catch (error) {
+    console.error('Error creating user:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      response: error.response
+    })
     throw handleAppwriteError(error, 'Failed to create user profile')
   }
 }

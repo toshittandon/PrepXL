@@ -1,5 +1,5 @@
 {
-  "name": "interview-prep-ai",
+  "name": "prepxl",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,6 +12,7 @@
     "build:production": "vite build --mode production",
     "build:analyze": "vite build --mode production && node scripts/analyze-bundle.js",
     "build:report": "vite build --mode production && npx vite-bundle-analyzer dist",
+    "build:monitor": "vite build --mode production && node scripts/performance-monitor.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 100",
     "lint:fix": "eslint . --ext js,jsx --fix",
     "preview": "vite preview",
@@ -24,9 +25,16 @@
     "test:e2e:ci": "start-server-and-test dev http://localhost:5173 'cypress run'",
     "test:all": "npm run test:run && npm run test:e2e",
     "clean": "rm -rf dist",
+    "validate": "node scripts/integration-validation.js",
+    "validate:config": "node scripts/validate-config.js",
+    "validate:full": "npm run validate && npm run test:run && npm run build:monitor",
     "verify:deployment": "node scripts/verify-deployment.js",
+    "monitor:performance": "node scripts/performance-monitor.js",
+    "status:deployment": "node scripts/deployment-status.js",
     "deploy:vercel": "npm run verify:deployment && npm run build:production && vercel --prod",
-    "deploy:netlify": "npm run verify:deployment && npm run build:production && netlify deploy --prod --dir=dist"
+    "deploy:netlify": "npm run verify:deployment && npm run build:production && netlify deploy --prod --dir=dist",
+    "deploy:prepare": "npm run validate:full && npm run verify:deployment",
+    "postbuild": "node scripts/performance-monitor.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

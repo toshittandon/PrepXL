@@ -68,10 +68,51 @@ export const validateFile = (file) => {
  */
 export const uploadResumeFile = async (file, userId, onProgress = null) => {
   try {
+    // Validate user ID
+    if (!userId) {
+      throw new Error('User ID is required for file upload')
+    }
+    
     // Validate file
     const validation = validateFile(file)
     if (!validation.isValid) {
       throw new Error(`File validation failed: ${validation.errors.join(', ')}`)
+    }
+    
+    // Validate session before upload - try to get fresh session data
+    const { getCurrentSession, getCurrentUserWithProfile } = await import('./auth.js')
+    
+    let session = null
+    let user = null
+    
+    try {
+      session = await getCurrentSession()
+      user = await getCurrentUserWithProfile()
+    } catch (sessionError) {
+      // Session is invalid or expired
+      console.log('Session validation failed:', sessionError)
+    }
+    
+    if (!session || !user) {
+      const authError = new Error('Authentication required. Please log in again.')
+      authError.code = 401
+      authError.type = 'session_expired'
+      
+      // Dispatch auth error event immediately for the AuthErrorBoundary to handle
+      if (typeof window !== 'undefined') {
+        const authErrorEvent = new CustomEvent('authError', {
+          detail: {
+            code: 401,
+            message: 'Authentication required. Please log in again.',
+            type: 'session_expired',
+            originalError: sessionError || new Error('No valid session'),
+            context: 'file_upload_validation'
+          }
+        })
+        window.dispatchEvent(authErrorEvent)
+      }
+      
+      throw authError
     }
     
     // Generate unique file ID
@@ -112,6 +153,25 @@ export const uploadResumeFile = async (file, userId, onProgress = null) => {
       bucketId: storageConfig.bucketId,
     }
   } catch (error) {
+    // Handle authentication errors specifically
+    if (error.code === 401 || error.message?.includes('Authentication required')) {
+      // Dispatch auth error event for the AuthErrorBoundary to handle
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          const authErrorEvent = new CustomEvent('authError', {
+            detail: {
+              code: 401,
+              message: 'Authentication required. Please log in again.',
+              type: 'session_expired',
+              originalError: error,
+              context: 'file_upload'
+            }
+          })
+          window.dispatchEvent(authErrorEvent)
+        }, 100)
+      }
+    }
+    
     throw handleAppwriteError(error, 'Failed to upload resume file')
   }
 }

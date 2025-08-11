@@ -6,9 +6,11 @@ import SignupForm from '../../components/forms/SignupForm.jsx'
 import OAuthButtons from '../../components/forms/OAuthButtons.jsx'
 import ErrorMessage from '../../components/common/ErrorMessage.jsx'
 import Card from '../../components/common/Card.jsx'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const Signup = () => {
   const { error } = useSelector((state) => state.auth)
+  const { theme } = useTheme()
   const navigate = useNavigate()
 
   const handleSignupSuccess = (user) => {
@@ -42,11 +44,16 @@ const Signup = () => {
           transition={{ duration: 0.3, delay: 0.1 }}
           className="text-center"
         >
+          <img 
+            src={theme === 'dark' ? "/logo/logolight.png" : "/logo/logodark.png"} 
+            alt="PrepXL Logo" 
+            className="h-12 w-auto mx-auto mb-6"
+          />
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
             Create Your Account
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Join InterviewPrep AI and start your interview preparation journey
+            Join PrepXL and start your interview preparation journey
           </p>
         </motion.div>
       </div>

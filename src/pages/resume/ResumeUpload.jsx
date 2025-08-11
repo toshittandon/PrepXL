@@ -18,7 +18,7 @@ import ProgressBar from '../../components/common/ProgressBar.jsx'
 import ErrorMessage from '../../components/common/ErrorMessage.jsx'
 import SuccessMessage from '../../components/common/SuccessMessage.jsx'
 import JobDescriptionInput from '../../components/forms/JobDescriptionInput.jsx'
-import UploadDebug from '../../components/debug/UploadDebug.jsx'
+// Debug component removed for production
 
 import { validateFile, formatFileSize } from '../../services/appwrite/storage.js'
 import { uploadResume, clearUploadState } from '../../store/slices/resumeSlice.js'
@@ -72,13 +72,51 @@ const ResumeUpload = () => {
     onSubmit: async (data) => {
       // Enhanced user authentication check
       if (!user) {
-        throw new Error('User not authenticated. Please log in again.')
+        const authError = new Error('User not authenticated. Please log in again.')
+        authError.code = 401
+        authError.type = 'session_expired'
+        
+        // Dispatch auth error event for the AuthErrorBoundary to handle
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            const authErrorEvent = new CustomEvent('authError', {
+              detail: {
+                code: 401,
+                message: 'Authentication required. Please log in again.',
+                type: 'session_expired',
+                context: 'resume_upload'
+              }
+            })
+            window.dispatchEvent(authErrorEvent)
+          }, 100)
+        }
+        
+        throw authError
       }
 
       // Check for user ID in different possible locations
       const userId = user.id || user.$id || user.userId
       if (!userId) {
-        throw new Error('User ID not found. Please log in again.')
+        const authError = new Error('User ID not found. Please log in again.')
+        authError.code = 401
+        authError.type = 'invalid_user_data'
+        
+        // Dispatch auth error event for the AuthErrorBoundary to handle
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            const authErrorEvent = new CustomEvent('authError', {
+              detail: {
+                code: 401,
+                message: 'User authentication data is invalid. Please log in again.',
+                type: 'invalid_user_data',
+                context: 'resume_upload'
+              }
+            })
+            window.dispatchEvent(authErrorEvent)
+          }, 100)
+        }
+        
+        throw authError
       }
 
       dispatch(clearUploadState())
@@ -96,6 +134,21 @@ const ResumeUpload = () => {
     },
     onError: (error) => {
       console.error('Upload failed:', error)
+      
+      // Handle authentication errors specifically
+      if (error.includes('Authentication required') || 
+          error.includes('User not authenticated') ||
+          error.includes('session has expired') ||
+          error.code === 401) {
+        
+        // Don't navigate immediately - let the AuthErrorBoundary handle it
+        // The SessionRecovery component will provide better UX
+        console.log('Authentication error detected, AuthErrorBoundary should handle this')
+        return
+      }
+      
+      // For other errors, show them normally
+      console.error('Non-auth error:', error)
     }
   })
 
@@ -158,23 +211,7 @@ const ResumeUpload = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Debug Components - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          <UploadDebug />
-          <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-              Debug Info (Development Only)
-            </h4>
-            <div className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
-              <div>User exists: {user ? 'Yes' : 'No'}</div>
-              <div>User ID: {user?.id || user?.$id || user?.userId || 'Not found'}</div>
-              <div>User object keys: {user ? Object.keys(user).join(', ') : 'No user'}</div>
-              <div>Auth loading: {useSelector(state => state.auth.loading) ? 'Yes' : 'No'}</div>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Debug components removed for production */}
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}

@@ -122,7 +122,7 @@ export const getSetupInstructions = () => {
   return {
     database: {
       id: appwriteConfig.databaseId,
-      name: 'InterviewPrep Database'
+      name: 'PrepXL Database'
     },
     collections: [
       {

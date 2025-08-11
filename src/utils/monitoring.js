@@ -1,132 +1,314 @@
 /**
- * Error monitoring and analytics utilities
+ * Monitoring and Analytics Utilities
+ * Centralized error monitoring, performance tracking, and analytics
  */
 
-// Sentry configuration for error monitoring
-export const initSentry = async () => {
-  // Only initialize Sentry if explicitly enabled and DSN is provided
-  if (import.meta.env.VITE_ENABLE_ERROR_REPORTING !== 'true' || !import.meta.env.VITE_SENTRY_DSN) {
-    console.log('Sentry monitoring disabled or not configured');
+import { monitoringConfig, loggingConfig, isDevelopment, isProduction } from './envConfig.js';
+
+// Sentry integration (lazy loaded)
+let Sentry = null;
+
+/**
+ * Initialize error monitoring
+ */
+export const initializeErrorMonitoring = async () => {
+  if (!monitoringConfig.sentry.enabled) {
+    console.log('📊 Error monitoring disabled');
     return;
   }
 
-  // Skip Sentry initialization in development to avoid import issues
-  if (import.meta.env.VITE_APP_ENVIRONMENT === 'development') {
-    console.log('Sentry skipped in development mode');
-    return;
-  }
+  try {
+    // Dynamically import Sentry only when needed
+    const { init, captureException, setUser, setTag, setContext } = await import('@sentry/react');
+    
+    Sentry = { init, captureException, setUser, setTag, setContext };
 
-  // For now, skip Sentry initialization to avoid build issues
-  console.log('Sentry initialization skipped - not configured for this build');
-  return;
+    Sentry.init({
+      dsn: monitoringConfig.sentry.dsn,
+      environment: monitoringConfig.sentry.environment,
+      release: monitoringConfig.sentry.release,
+      integrations: [
+        // Add performance monitoring in production
+        ...(isProduction() ? [
+          // Performance monitoring
+        ] : []),
+      ],
+      tracesSampleRate: isProduction() ? 0.1 : 1.0, // 10% in production, 100% in dev
+      beforeSend(event) {
+        // Filter out development errors
+        if (isDevelopment() && event.exception) {
+          console.error('Sentry Event:', event);
+        }
+        return event;
+      },
+    });
+
+    console.log('✅ Error monitoring initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize error monitoring:', error);
+  }
 };
 
-// Google Analytics configuration
-export const initGoogleAnalytics = () => {
-  if (import.meta.env.VITE_ENABLE_ANALYTICS === 'true' && import.meta.env.VITE_GA_TRACKING_ID) {
-    // Load Google Analytics script
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${import.meta.env.VITE_GA_TRACKING_ID}`;
-    document.head.appendChild(script);
+/**
+ * Log error to monitoring service
+ */
+export const logError = (error, context = {}) => {
+  // Always log to console in development
+  if (isDevelopment() || loggingConfig.enableConsole) {
+    console.error('Error:', error, context);
+  }
 
-    // Initialize gtag
-    window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      window.dataLayer.push(arguments);
+  // Send to Sentry if available
+  if (Sentry && monitoringConfig.sentry.enabled) {
+    if (context) {
+      Sentry.setContext('errorContext', context);
     }
-    window.gtag = gtag;
+    Sentry.captureException(error);
+  }
+};
 
-    gtag('js', new Date());
-    gtag('config', import.meta.env.VITE_GA_TRACKING_ID, {
-      page_title: document.title,
-      page_location: window.location.href,
+/**
+ * Set user context for error monitoring
+ */
+export const setUserContext = (user) => {
+  if (Sentry && monitoringConfig.sentry.enabled) {
+    Sentry.setUser({
+      id: user.id,
+      email: user.email,
+      username: user.name,
     });
   }
 };
 
-// Hotjar configuration
-export const initHotjar = () => {
-  if (import.meta.env.VITE_ENABLE_ANALYTICS === 'true' && import.meta.env.VITE_HOTJAR_ID) {
+/**
+ * Add tags to error context
+ */
+export const setErrorTags = (tags) => {
+  if (Sentry && monitoringConfig.sentry.enabled) {
+    Object.entries(tags).forEach(([key, value]) => {
+      Sentry.setTag(key, value);
+    });
+  }
+};
+
+// Google Analytics integration
+let gtag = null;
+
+/**
+ * Initialize Google Analytics
+ */
+export const initializeAnalytics = () => {
+  if (!monitoringConfig.analytics.googleAnalytics.enabled) {
+    console.log('📈 Analytics disabled');
+    return;
+  }
+
+  const trackingId = monitoringConfig.analytics.googleAnalytics.trackingId;
+
+  try {
+    // Load Google Analytics script
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;
+    document.head.appendChild(script);
+
+    // Initialize gtag
+    window.dataLayer = window.dataLayer || [];
+    gtag = function() {
+      window.dataLayer.push(arguments);
+    };
+    gtag('js', new Date());
+    gtag('config', trackingId, {
+      page_title: document.title,
+      page_location: window.location.href,
+    });
+
+    console.log('✅ Google Analytics initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize Google Analytics:', error);
+  }
+};
+
+/**
+ * Track page view
+ */
+export const trackPageView = (path, title) => {
+  if (gtag && monitoringConfig.analytics.googleAnalytics.enabled) {
+    gtag('config', monitoringConfig.analytics.googleAnalytics.trackingId, {
+      page_path: path,
+      page_title: title,
+    });
+  }
+
+  // Log in development
+  if (isDevelopment()) {
+    console.log('📊 Page View:', { path, title });
+  }
+};
+
+/**
+ * Track custom event
+ */
+export const trackEvent = (eventName, parameters = {}) => {
+  if (gtag && monitoringConfig.analytics.googleAnalytics.enabled) {
+    gtag('event', eventName, parameters);
+  }
+
+  // Log in development
+  if (isDevelopment()) {
+    console.log('📊 Event:', eventName, parameters);
+  }
+};
+
+/**
+ * Track user interaction
+ */
+export const trackUserInteraction = (action, category = 'User', label = '') => {
+  trackEvent('user_interaction', {
+    event_category: category,
+    event_label: label,
+    value: action,
+  });
+};
+
+// Hotjar integration
+/**
+ * Initialize Hotjar
+ */
+export const initializeHotjar = () => {
+  if (!monitoringConfig.analytics.hotjar.enabled) {
+    return;
+  }
+
+  const hotjarId = monitoringConfig.analytics.hotjar.id;
+
+  try {
     (function(h,o,t,j,a,r){
       h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-      h._hjSettings={hjid:import.meta.env.VITE_HOTJAR_ID,hjsv:6};
+      h._hjSettings={hjid:hotjarId,hjsv:6};
       a=o.getElementsByTagName('head')[0];
       r=o.createElement('script');r.async=1;
       r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
       a.appendChild(r);
     })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-  }
-};
 
-// Custom event tracking
-export const trackEvent = (eventName, properties = {}) => {
-  // Google Analytics event tracking
-  if (window.gtag && import.meta.env.VITE_ENABLE_ANALYTICS === 'true') {
-    window.gtag('event', eventName, {
-      ...properties,
-      app_version: import.meta.env.VITE_APP_VERSION,
-      environment: import.meta.env.VITE_APP_ENVIRONMENT,
-    });
+    console.log('✅ Hotjar initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize Hotjar:', error);
   }
-
-  // Console logging for development
-  if (import.meta.env.VITE_APP_ENVIRONMENT === 'development') {
-    console.log('Analytics Event:', eventName, properties);
-  }
-};
-
-// Error reporting utility
-export const reportError = (error, context = {}) => {
-  // Log to console in development
-  if (import.meta.env.VITE_APP_ENVIRONMENT === 'development') {
-    console.error('Error reported:', error, context);
-  }
-
-  // Send to Sentry if available
-  if (window.Sentry && import.meta.env.VITE_ENABLE_ERROR_REPORTING === 'true') {
-    window.Sentry.withScope((scope) => {
-      Object.keys(context).forEach(key => {
-        scope.setTag(key, context[key]);
-      });
-      window.Sentry.captureException(error);
-    });
-  }
-
-  // Track error event
-  trackEvent('error_occurred', {
-    error_message: error.message,
-    error_stack: error.stack,
-    ...context,
-  });
 };
 
 // Performance monitoring
+/**
+ * Track performance metrics
+ */
 export const trackPerformance = (metricName, value, unit = 'ms') => {
-  // Google Analytics custom metric
-  if (window.gtag && import.meta.env.VITE_ENABLE_ANALYTICS === 'true') {
-    window.gtag('event', 'timing_complete', {
-      name: metricName,
-      value: Math.round(value),
-      event_category: 'Performance',
-    });
-  }
+  // Send to analytics
+  trackEvent('performance_metric', {
+    metric_name: metricName,
+    metric_value: value,
+    metric_unit: unit,
+  });
 
-  // Console logging for development
-  if (import.meta.env.VITE_APP_ENVIRONMENT === 'development') {
-    console.log(`Performance: ${metricName} = ${value}${unit}`);
+  // Log in development
+  if (isDevelopment()) {
+    console.log(`⚡ Performance: ${metricName} = ${value}${unit}`);
   }
+};
+
+/**
+ * Track page load performance
+ */
+export const trackPageLoadPerformance = () => {
+  if (typeof window !== 'undefined' && window.performance) {
+    const navigation = performance.getEntriesByType('navigation')[0];
+    
+    if (navigation) {
+      trackPerformance('page_load_time', Math.round(navigation.loadEventEnd - navigation.fetchStart));
+      trackPerformance('dom_content_loaded', Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart));
+      trackPerformance('first_paint', Math.round(navigation.responseEnd - navigation.fetchStart));
+    }
+  }
+};
+
+/**
+ * Track bundle size and loading performance
+ */
+export const trackBundlePerformance = () => {
+  if (typeof window !== 'undefined' && window.performance) {
+    const resources = performance.getEntriesByType('resource');
+    
+    let totalJSSize = 0;
+    let totalCSSSize = 0;
+    
+    resources.forEach(resource => {
+      if (resource.name.includes('.js')) {
+        totalJSSize += resource.transferSize || 0;
+      } else if (resource.name.includes('.css')) {
+        totalCSSSize += resource.transferSize || 0;
+      }
+    });
+
+    trackPerformance('total_js_size', Math.round(totalJSSize / 1024), 'KB');
+    trackPerformance('total_css_size', Math.round(totalCSSSize / 1024), 'KB');
+  }
+};
+
+// Error boundary integration
+/**
+ * Handle React error boundary errors
+ */
+export const handleErrorBoundary = (error, errorInfo) => {
+  logError(error, {
+    errorBoundary: true,
+    componentStack: errorInfo.componentStack,
+  });
+
+  // Track error event
+  trackEvent('error_boundary', {
+    error_message: error.message,
+    error_stack: error.stack,
+  });
 };
 
 // Initialize all monitoring services
-export const initMonitoring = async () => {
-  await initSentry();
-  initGoogleAnalytics();
-  initHotjar();
+/**
+ * Initialize all monitoring and analytics services
+ */
+export const initializeMonitoring = async () => {
+  console.log('🚀 Initializing monitoring services...');
 
-  // Track page load performance
-  if (window.performance && window.performance.timing) {
-    const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
-    trackPerformance('page_load_time', loadTime);
+  try {
+    await initializeErrorMonitoring();
+    initializeAnalytics();
+    initializeHotjar();
+
+    // Track initial page load performance
+    setTimeout(() => {
+      trackPageLoadPerformance();
+      trackBundlePerformance();
+    }, 1000);
+
+    console.log('✅ All monitoring services initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize monitoring services:', error);
   }
 };
+
+// Alias for backward compatibility
+export const initMonitoring = initializeMonitoring;
+
+// Export monitoring utilities
+export const monitoring = {
+  initializeMonitoring,
+  logError,
+  setUserContext,
+  setErrorTags,
+  trackPageView,
+  trackEvent,
+  trackUserInteraction,
+  trackPerformance,
+  handleErrorBoundary,
+};
+
+export default monitoring;

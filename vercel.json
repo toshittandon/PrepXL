@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "interview-prep-ai",
+  "name": "prepxl",
   "builds": [
     {
       "src": "package.json",

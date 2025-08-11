@@ -107,6 +107,15 @@ const interviewSlice = createSlice({
     setLoading: (state, action) => {
       state.loading = action.payload
     },
+    startSession: (state, action) => {
+      state.currentSession = action.payload
+      state.interactions = []
+      state.currentInteractionIndex = 0
+      state.interviewStarted = false
+      state.interviewCompleted = false
+      state.interviewPaused = false
+      state.error = null
+    },
     setCurrentSession: (state, action) => {
       state.currentSession = action.payload
       if (action.payload) {
@@ -143,9 +152,9 @@ const interviewSlice = createSlice({
     // Interaction management
     addInteraction: (state, action) => {
       const interaction = {
-        ...action.payload,
         timestamp: new Date().toISOString(),
-        order: state.interactions.length + 1
+        order: state.interactions.length + 1,
+        ...action.payload
       }
       state.interactions.push(interaction)
       state.currentInteractionIndex = state.interactions.length - 1
@@ -167,6 +176,12 @@ const interviewSlice = createSlice({
     },
     
     // Speech recognition management
+    setRecordingState: (state, action) => {
+      state.isRecording = action.payload
+      if (!action.payload) {
+        state.currentTranscript = ''
+      }
+    },
     setIsRecording: (state, action) => {
       state.isRecording = action.payload
       if (!action.payload) {
@@ -239,8 +254,20 @@ const interviewSlice = createSlice({
       state.error = null
     },
     
+    // Session score update
+    updateSessionScore: (state, action) => {
+      if (state.currentSession) {
+        state.currentSession.finalScore = action.payload
+      }
+    },
+    
     // Session cleanup
-    endSession: (state) => {
+    endSession: (state, action) => {
+      // Update current session with final data if provided
+      if (action.payload && state.currentSession) {
+        state.currentSession = { ...state.currentSession, ...action.payload }
+      }
+      
       // Preserve session in history
       if (state.currentSession) {
         const existingIndex = state.sessionHistory.findIndex(
@@ -276,6 +303,7 @@ const interviewSlice = createSlice({
 export const {
   // Session management
   setLoading,
+  startSession,
   setCurrentSession,
   addToSessionHistory,
   
@@ -291,6 +319,7 @@ export const {
   setSavingInteraction,
   
   // Speech recognition
+  setRecordingState,
   setIsRecording,
   setSpeechRecognitionSupported,
   setMicrophonePermission,
@@ -314,6 +343,9 @@ export const {
   setError,
   clearError,
   
+  // Session score update
+  updateSessionScore,
+  
   // Cleanup
   endSession,
   reset
@@ -332,5 +364,20 @@ export const selectMicrophonePermission = (state) => state.interview.microphoneP
 export const selectCurrentTranscript = (state) => state.interview.currentTranscript
 export const selectFinalTranscript = (state) => state.interview.finalTranscript
 export const selectUseVoiceInput = (state) => state.interview.useVoiceInput
+export const selectInterviewLoading = (state) => state.interview.loading
+export const selectInterviewError = (state) => state.interview.error
+
+// Session duration selector
+export const selectSessionDuration = (state) => {
+  const session = state.interview.currentSession
+  if (!session || !session.startedAt) return 0
+  
+  const startTime = new Date(session.startedAt).getTime()
+  const endTime = session.completedAt 
+    ? new Date(session.completedAt).getTime()
+    : Date.now()
+  
+  return endTime - startTime // Duration in milliseconds
+}
 
 export default interviewSlice.reducer

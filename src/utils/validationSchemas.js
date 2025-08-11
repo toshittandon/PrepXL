@@ -228,7 +228,38 @@ export const validationSchemas = {
 
 // Data validation functions for database operations
 export const validateUserData = async (userData, isUpdate = false) => {
-  const schema = isUpdate ? userProfileUpdateSchema : signupSchema.omit(['password', 'confirmPassword'])
+  // Create a more flexible schema for user creation that allows empty target fields
+  const userCreationSchema = yup.object({
+    id: yup.string().optional(),
+    name: yup
+      .string()
+      .required('Full name is required')
+      .min(2, 'Name must be at least 2 characters')
+      .max(50, 'Name must be less than 50 characters')
+      .matches(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+    email: yup
+      .string()
+      .required('Email is required')
+      .matches(emailRegex, 'Invalid email address')
+      .max(255, 'Email must be less than 255 characters'),
+    experienceLevel: yup
+      .string()
+      .required('Please select your experience level')
+      .oneOf(['Entry', 'Mid', 'Senior', 'Executive'], 'Invalid experience level'),
+    targetRole: yup
+      .string()
+      .default('')
+      .max(100, 'Role must be less than 100 characters')
+      .trim(),
+    targetIndustry: yup
+      .string()
+      .default('')
+      .max(100, 'Industry must be less than 100 characters')
+      .trim(),
+    isAdmin: yup.boolean().default(false)
+  })
+
+  const schema = isUpdate ? userProfileUpdateSchema : userCreationSchema
   return await schema.validate(userData, { abortEarly: false, stripUnknown: true })
 }
 

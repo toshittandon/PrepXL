@@ -10,6 +10,12 @@ export const rtkQueryErrorLogger = (api) => (next) => (action) => {
     const endpointName = action.meta?.arg?.endpointName
     const context = endpointName ? `API Error (${endpointName})` : 'API Error'
 
+    // Don't show notifications for authentication errors - let AuthErrorBoundary handle them
+    if (error?.status === 401 || error?.error === 'Authentication required') {
+      console.log('Authentication error detected, letting AuthErrorBoundary handle it:', error)
+      return next(action)
+    }
+
     // Handle the error using our error utility
     handleError(error, api.dispatch, context, {
       showNotification: true,
@@ -47,21 +53,8 @@ export const handleAuthError = (error, dispatch) => {
   const context = 'Authentication'
   
   if (error.status === 401) {
-    dispatch(addNotification({
-      type: 'error',
-      title: 'Session Expired',
-      message: 'Your session has expired. Please log in again.',
-      persistent: true,
-      actions: [
-        {
-          label: 'Login',
-          onClick: () => {
-            window.location.href = '/login'
-          },
-          variant: 'primary'
-        }
-      ]
-    }))
+    // Don't show notification for 401 errors - let AuthErrorBoundary handle them
+    console.log('Authentication error detected, letting AuthErrorBoundary handle it:', error)
     return
   }
 

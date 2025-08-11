@@ -15,11 +15,13 @@ import {
   BookOpen
 } from 'lucide-react'
 import ThemeToggle from '../common/ThemeToggle'
+import { useTheme } from '../../contexts/ThemeContext'
 import { logout } from '../../store/slices/authSlice'
 
 const Header = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const { user } = useSelector((state) => state.auth)
+  const { theme } = useTheme()
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -62,17 +64,11 @@ const Header = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
               to="/dashboard" 
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">IP</span>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  InterviewPrep AI
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
-                  Complete
-                </p>
-              </div>
+              <img 
+                src={theme === 'dark' ? "/logo/logolight.png" : "/logo/logodark.png"} 
+                alt="PrepXL Logo" 
+                className="h-8 w-auto"
+              />
             </Link>
           </div>
 
@@ -103,6 +99,8 @@ const Header = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  aria-expanded={isUserMenuOpen}
+                  aria-haspopup="true"
                   className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
@@ -169,6 +167,7 @@ const Header = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
             {/* Mobile Menu Button */}
             <button
               onClick={onMobileMenuToggle}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
               className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
             >
               {isMobileMenuOpen ? (

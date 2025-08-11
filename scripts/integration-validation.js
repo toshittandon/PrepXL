@@ -87,7 +87,7 @@ const runCommand = (command, silent = true) => {
 
 // Main validation function
 async function validateIntegration() {
-  log(`${COLORS.BOLD}${COLORS.BLUE}🔍 InterviewPrep AI - Integration Validation${COLORS.RESET}\n`);
+  log(`${COLORS.BOLD}${COLORS.BLUE}🔍 PrepXL - Integration Validation${COLORS.RESET}\n`);
 
   // 1. Project Structure Validation
   section('📁 Project Structure');

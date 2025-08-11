@@ -34,17 +34,14 @@ const ResumeAnalysis = () => {
   
   const [showFullJobDescription, setShowFullJobDescription] = useState(false)
   
-  // Check if this is a mock resume ID
-  const isMockResume = resumeId && resumeId.startsWith('mock-resume-')
-  
-  // Fetch resume data using RTK Query (skip for mock resumes)
+  // Fetch resume data using RTK Query
   const {
     data: resumeData,
     isLoading: isLoadingResume,
     error: resumeError,
     refetch: refetchResume
   } = useGetResumeByIdQuery(resumeId, {
-    skip: !resumeId || isMockResume
+    skip: !resumeId
   })
 
   // Fetch analysis if not already loaded (now handles both real and mock resumes)
@@ -66,9 +63,7 @@ const ResumeAnalysis = () => {
   const handleRefresh = () => {
     if (resumeId) {
       dispatch(fetchResumeAnalysis(resumeId))
-      if (!isMockResume) {
-        refetchResume()
-      }
+      refetchResume()
     }
   }
 
@@ -166,7 +161,6 @@ const ResumeAnalysis = () => {
   if (process.env.NODE_ENV === 'development') {
     console.log('ResumeAnalysis Debug:', {
       resumeId,
-      isMockResume,
       hasCurrentAnalysis: !!currentAnalysis,
       hasResumeData: !!resumeData,
       hasAnalysisResults: !!analysisResults,
@@ -176,22 +170,7 @@ const ResumeAnalysis = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Debug Panel - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-            Analysis Debug Info (Development Only)
-          </h4>
-          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-            <div>Resume ID: {resumeId}</div>
-            <div>Is Mock Resume: {isMockResume ? 'Yes' : 'No'}</div>
-            <div>Current Analysis: {currentAnalysis ? 'Available' : 'Not available'}</div>
-            <div>Resume Data: {resumeData ? 'Available' : 'Not available'}</div>
-            <div>Analysis Results: {analysisResults ? 'Available' : 'Not available'}</div>
-            <div>Error: {error || resumeError?.error || 'None'}</div>
-          </div>
-        </div>
-      )}
+      {/* Debug panel removed for production */}
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}

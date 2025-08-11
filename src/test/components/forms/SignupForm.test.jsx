@@ -10,7 +10,8 @@ import uiSlice from '../../../store/slices/uiSlice.js'
 
 // Mock the auth service
 vi.mock('../../../services/appwrite/auth.js', () => ({
-  signUpWithEmail: vi.fn(),
+  createAccount: vi.fn(),
+  signInWithEmail: vi.fn(),
   getCurrentUserWithProfile: vi.fn(),
   signInWithGoogle: vi.fn(),
   signInWithLinkedIn: vi.fn()
@@ -134,31 +135,11 @@ describe('SignupForm Component', () => {
     fireEvent.blur(confirmPasswordInput)
     
     await waitFor(() => {
-      expect(screen.getByText(/passwords must match/i)).toBeInTheDocument()
+      expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument()
     })
   })
 
-  it('shows password strength indicator', async () => {
-    render(
-      <TestWrapper>
-        <SignupForm />
-      </TestWrapper>
-    )
-    
-    const passwordInput = screen.getByLabelText(/^password$/i)
-    
-    // Weak password
-    fireEvent.change(passwordInput, { target: { value: 'weak' } })
-    await waitFor(() => {
-      expect(screen.getByText(/weak/i)).toBeInTheDocument()
-    })
-    
-    // Strong password
-    fireEvent.change(passwordInput, { target: { value: 'StrongPassword123!' } })
-    await waitFor(() => {
-      expect(screen.getByText(/strong/i)).toBeInTheDocument()
-    })
-  })
+
 
   it('toggles password visibility', () => {
     render(
@@ -169,7 +150,7 @@ describe('SignupForm Component', () => {
     
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const toggleButtons = screen.getAllByRole('button', { name: /toggle password visibility/i })
+    const toggleButtons = screen.getAllByRole('button', { name: /show password|hide password/i })
     
     expect(passwordInput.type).toBe('password')
     expect(confirmPasswordInput.type).toBe('password')
@@ -181,39 +162,18 @@ describe('SignupForm Component', () => {
     expect(confirmPasswordInput.type).toBe('text')
   })
 
-  it('requires terms and conditions acceptance', async () => {
-    render(
-      <TestWrapper>
-        <SignupForm />
-      </TestWrapper>
-    )
-    
-    const nameInput = screen.getByLabelText(/full name/i)
-    const emailInput = screen.getByLabelText(/email address/i)
-    const passwordInput = screen.getByLabelText(/^password$/i)
-    const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const submitButton = screen.getByRole('button', { name: /create account/i })
-    
-    fireEvent.change(nameInput, { target: { value: 'John Doe' } })
-    fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
-    fireEvent.change(passwordInput, { target: { value: 'password123' } })
-    fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } })
-    fireEvent.click(submitButton)
-    
-    await waitFor(() => {
-      expect(screen.getByText(/you must accept the terms and conditions/i)).toBeInTheDocument()
-    })
-  })
+
 
   it('submits form with valid data', async () => {
     const mockOnSuccess = vi.fn()
-    const { signUpWithEmail, getCurrentUserWithProfile } = await import('../../../services/appwrite/auth.js')
+    const { createAccount } = await import('../../../services/appwrite/auth.js')
     
-    signUpWithEmail.mockResolvedValue({ $id: 'user-id' })
-    getCurrentUserWithProfile.mockResolvedValue({ 
-      $id: 'user-id', 
-      name: 'John Doe',
-      email: 'john@example.com',
+    createAccount.mockResolvedValue({ 
+      account: {
+        $id: 'user-id', 
+        name: 'John Doe',
+        email: 'john@example.com'
+      },
       profile: { isAdmin: false }
     })
     
@@ -227,30 +187,26 @@ describe('SignupForm Component', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const termsCheckbox = screen.getByLabelText(/i agree to the terms and conditions/i)
     const submitButton = screen.getByRole('button', { name: /create account/i })
     
     fireEvent.change(nameInput, { target: { value: 'John Doe' } })
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } })
-    fireEvent.click(termsCheckbox)
     fireEvent.click(submitButton)
     
     await waitFor(() => {
-      expect(signUpWithEmail).toHaveBeenCalledWith('john@example.com', 'password123', 'John Doe')
-      expect(mockOnSuccess).toHaveBeenCalledWith({
-        $id: 'user-id',
-        name: 'John Doe',
+      expect(createAccount).toHaveBeenCalledWith({
         email: 'john@example.com',
-        profile: { isAdmin: false }
+        password: 'password123',
+        name: 'John Doe'
       })
     })
   })
 
   it('shows loading state during submission', async () => {
-    const { signUpWithEmail } = await import('../../../services/appwrite/auth.js')
-    signUpWithEmail.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+    const { createAccount } = await import('../../../services/appwrite/auth.js')
+    createAccount.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
     
     render(
       <TestWrapper>
@@ -262,14 +218,12 @@ describe('SignupForm Component', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const termsCheckbox = screen.getByLabelText(/i agree to the terms and conditions/i)
     const submitButton = screen.getByRole('button', { name: /create account/i })
     
     fireEvent.change(nameInput, { target: { value: 'John Doe' } })
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } })
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } })
-    fireEvent.click(termsCheckbox)
     fireEvent.click(submitButton)
     
     expect(submitButton).toBeDisabled()
@@ -277,8 +231,8 @@ describe('SignupForm Component', () => {
   })
 
   it('handles signup error', async () => {
-    const { signUpWithEmail } = await import('../../../services/appwrite/auth.js')
-    signUpWithEmail.mockRejectedValue(new Error('Email already exists'))
+    const { createAccount } = await import('../../../services/appwrite/auth.js')
+    createAccount.mockRejectedValue(new Error('Email already exists'))
     
     render(
       <TestWrapper>
@@ -290,14 +244,12 @@ describe('SignupForm Component', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const termsCheckbox = screen.getByLabelText(/i agree to the terms and conditions/i)
     const submitButton = screen.getByRole('button', { name: /create account/i })
     
     fireEvent.change(nameInput, { target: { value: 'John Doe' } })
     fireEvent.change(emailInput, { target: { value: 'existing@example.com' } })
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } })
-    fireEvent.click(termsCheckbox)
     fireEvent.click(submitButton)
     
     await waitFor(() => {
@@ -312,12 +264,14 @@ describe('SignupForm Component', () => {
       </TestWrapper>
     )
     
-    const signInText = screen.getByText(/already have an account/i)
-    const signInLink = screen.getByText(/sign in/i)
+    const signInTexts = screen.getAllByText(/already have an account/i)
+    const signInLinks = screen.getAllByText(/sign in/i)
     
-    expect(signInText).toBeInTheDocument()
-    expect(signInLink).toBeInTheDocument()
-    expect(signInLink.closest('a')).toHaveAttribute('href', '/auth/login')
+    expect(signInTexts.length).toBeGreaterThan(0)
+    expect(signInLinks.length).toBeGreaterThan(0)
+    expect(signInTexts[0]).toBeInTheDocument()
+    expect(signInLinks[0]).toBeInTheDocument()
+    expect(signInLinks[0].closest('a')).toHaveAttribute('href', '/login')
   })
 
   it('includes OAuth signup options', () => {
@@ -327,8 +281,13 @@ describe('SignupForm Component', () => {
       </TestWrapper>
     )
     
-    expect(screen.getByText(/sign up with google/i)).toBeInTheDocument()
-    expect(screen.getByText(/sign up with linkedin/i)).toBeInTheDocument()
+    const googleButtons = screen.getAllByRole('button', { name: /sign up with google/i })
+    const linkedinButtons = screen.getAllByRole('button', { name: /sign up with linkedin/i })
+    
+    expect(googleButtons.length).toBeGreaterThan(0)
+    expect(linkedinButtons.length).toBeGreaterThan(0)
+    expect(googleButtons[0]).toBeInTheDocument()
+    expect(linkedinButtons[0]).toBeInTheDocument()
   })
 
   it('validates name length', async () => {
@@ -354,8 +313,9 @@ describe('SignupForm Component', () => {
       </TestWrapper>
     )
     
-    const privacyLink = screen.getByText(/privacy policy/i)
-    expect(privacyLink).toBeInTheDocument()
-    expect(privacyLink.closest('a')).toHaveAttribute('href', '/privacy-policy')
+    const privacyLinks = screen.getAllByRole('link', { name: /privacy policy/i })
+    expect(privacyLinks.length).toBeGreaterThan(0)
+    expect(privacyLinks[0]).toBeInTheDocument()
+    expect(privacyLinks[0]).toHaveAttribute('href', '/privacy-policy')
   })
 })

@@ -277,6 +277,64 @@ const SignupForm = ({ onSuccess }) => {
       >
         {isSubmitting ? 'Creating Account...' : 'Create Account'}
       </Button>
+
+      {/* OAuth Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+            Or continue with
+          </span>
+        </div>
+      </div>
+
+      {/* OAuth Buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          Sign up with Google
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          Sign up with LinkedIn
+        </Button>
+      </div>
+
+      {/* Sign In Link */}
+      <div className="text-center">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Already have an account?{' '}
+          <a
+            href="/login"
+            className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+          >
+            Sign in
+          </a>
+        </p>
+      </div>
+
+      {/* Privacy Policy Link */}
+      <div className="text-center">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          By creating an account, you agree to our{' '}
+          <a
+            href="/privacy-policy"
+            className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+          >
+            Privacy Policy
+          </a>
+        </p>
+      </div>
     </motion.form>
   )
 }

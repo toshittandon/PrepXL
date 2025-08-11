@@ -1,13 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { configureStore } from '@reduxjs/toolkit'
 import authSlice, {
+  loginStart,
+  loginSuccess,
+  loginFailure,
   setLoading,
   setUser,
   setSession,
   setError,
   clearError,
+  updateProfile,
   logout,
-  reset
+  sessionConflictStart,
+  sessionConflictResolved,
+  sessionConflictFailed,
+  clearSessionConflictResolution,
+  reset,
+  selectCurrentUser,
+  selectIsAuthenticated,
+  selectIsAdmin,
+  selectAuthLoading,
+  selectAuthError,
+  selectSessionConflictResolution,
+  selectIsSessionConflictInProgress,
+  selectSessionConflictMethod,
+  selectIsSessionConflictResolved
 } from '../../../store/slices/authSlice.js'
 
 // Mock user data
@@ -25,9 +42,9 @@ const mockUser = {
 
 const mockAdminUser = {
   ...mockUser,
+  isAdmin: true,
   profile: {
-    ...mockUser.profile,
-    isAdmin: true
+    ...mockUser.profile
   }
 }
 
@@ -49,6 +66,11 @@ const createTestStore = (initialState = {}) => {
         session: null,
         loading: false,
         error: null,
+        sessionConflictResolution: {
+          inProgress: false,
+          method: null,
+          resolved: false
+        },
         ...initialState
       }
     }
@@ -69,6 +91,11 @@ describe('Auth Slice', () => {
       expect(state.session).toBe(null)
       expect(state.loading).toBe(false)
       expect(state.error).toBe(null)
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: false,
+        method: null,
+        resolved: false
+      })
     })
   })
 
@@ -116,6 +143,80 @@ describe('Auth Slice', () => {
       expect(state.user).toBe(null)
       expect(state.session).toBe(null)
       expect(state.error).toBe(null)
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: false,
+        method: null,
+        resolved: false
+      })
+    })
+  })
+
+  describe('Session Conflict Resolution Actions', () => {
+    it('should handle sessionConflictStart with CURRENT method', () => {
+      store.dispatch(sessionConflictStart({ method: 'CURRENT' }))
+      
+      const state = store.getState().auth
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: true,
+        method: 'CURRENT',
+        resolved: false
+      })
+    })
+
+    it('should handle sessionConflictStart with ALL method', () => {
+      store.dispatch(sessionConflictStart({ method: 'ALL' }))
+      
+      const state = store.getState().auth
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: true,
+        method: 'ALL',
+        resolved: false
+      })
+    })
+
+    it('should handle sessionConflictResolved', () => {
+      // First start a conflict resolution
+      store.dispatch(sessionConflictStart({ method: 'CURRENT' }))
+      
+      // Then resolve it
+      store.dispatch(sessionConflictResolved({ method: 'CURRENT' }))
+      
+      const state = store.getState().auth
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: false,
+        method: 'CURRENT',
+        resolved: true
+      })
+    })
+
+    it('should handle sessionConflictFailed', () => {
+      // First start a conflict resolution
+      store.dispatch(sessionConflictStart({ method: 'ALL' }))
+      
+      // Then fail it
+      store.dispatch(sessionConflictFailed())
+      
+      const state = store.getState().auth
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: false,
+        method: null,
+        resolved: false
+      })
+    })
+
+    it('should handle clearSessionConflictResolution', () => {
+      // First set some conflict resolution state
+      store.dispatch(sessionConflictResolved({ method: 'CURRENT' }))
+      
+      // Then clear it
+      store.dispatch(clearSessionConflictResolution())
+      
+      const state = store.getState().auth
+      expect(state.sessionConflictResolution).toEqual({
+        inProgress: false,
+        method: null,
+        resolved: false
+      })
     })
   })
 
@@ -201,6 +302,50 @@ describe('Auth Slice', () => {
       store.dispatch(loginFailure('Login failed'))
       state = store.getState()
       expect(selectAuthError(state)).toBe('Login failed')
+    })
+
+    it('should select session conflict resolution state', () => {
+      let state = store.getState()
+      expect(selectSessionConflictResolution(state)).toEqual({
+        inProgress: false,
+        method: null,
+        resolved: false
+      })
+      
+      store.dispatch(sessionConflictStart({ method: 'CURRENT' }))
+      state = store.getState()
+      expect(selectSessionConflictResolution(state)).toEqual({
+        inProgress: true,
+        method: 'CURRENT',
+        resolved: false
+      })
+    })
+
+    it('should select session conflict in progress state', () => {
+      let state = store.getState()
+      expect(selectIsSessionConflictInProgress(state)).toBe(false)
+      
+      store.dispatch(sessionConflictStart({ method: 'ALL' }))
+      state = store.getState()
+      expect(selectIsSessionConflictInProgress(state)).toBe(true)
+    })
+
+    it('should select session conflict method', () => {
+      let state = store.getState()
+      expect(selectSessionConflictMethod(state)).toBe(null)
+      
+      store.dispatch(sessionConflictStart({ method: 'CURRENT' }))
+      state = store.getState()
+      expect(selectSessionConflictMethod(state)).toBe('CURRENT')
+    })
+
+    it('should select session conflict resolved state', () => {
+      let state = store.getState()
+      expect(selectIsSessionConflictResolved(state)).toBe(false)
+      
+      store.dispatch(sessionConflictResolved({ method: 'CURRENT' }))
+      state = store.getState()
+      expect(selectIsSessionConflictResolved(state)).toBe(true)
     })
   })
 

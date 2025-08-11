@@ -26,7 +26,13 @@ const UserProfile = () => {
     targetIndustry: user?.targetIndustry || ''
   })
 
-  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation()
+  const [updateUser, { isLoading: isUpdating, error: updateError }] = useUpdateUserMutation()
+
+  // If there's an authentication error, don't render the component
+  // Let the AuthErrorBoundary handle the session recovery
+  if (updateError?.status === 401) {
+    return null
+  }
 
   const experienceLevels = [
     { value: 'Entry', label: 'Entry Level (0-2 years)' },

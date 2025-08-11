@@ -23,8 +23,17 @@ const SessionHistory = memo(() => {
   
   const { data: sessions = [], isLoading, error } = useGetInterviewSessionsQuery(
     user?.id, 
-    { skip: !user?.id }
+    { 
+      skip: !user?.id,
+      refetchOnMountOrArgChange: true
+    }
   )
+
+  // If there's an authentication error, don't render the component
+  // Let the AuthErrorBoundary handle the session recovery
+  if (error?.status === 401) {
+    return null
+  }
 
   // Filter sessions based on selected filter
   const filteredSessions = sessions.filter(session => {

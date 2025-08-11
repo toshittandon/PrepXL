@@ -21,7 +21,7 @@ vi.mock('../utils/envConfig.js', () => ({
       baseUrl: 'https://test-ai-api.com',
       apiKey: 'test-api-key',
     },
-    appName: 'InterviewPrep AI Test',
+    appName: 'PrepXL Test',
     appVersion: '1.0.0-test',
     mockAiResponses: true,
     isDevelopment: true,

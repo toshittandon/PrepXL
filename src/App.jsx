@@ -5,6 +5,7 @@ import { Suspense, lazy } from 'react'
 
 // Error Handling Components
 import ErrorBoundary from './components/common/ErrorBoundary'
+import AuthErrorBoundary from './components/common/AuthErrorBoundary'
 import NotificationSystem from './components/common/NotificationSystem'
 import LoadingSpinner from './components/common/LoadingSpinner'
 
@@ -15,9 +16,10 @@ import AuthGuard from './components/common/AuthGuard'
 // Hooks
 import useOfflineDetection from './hooks/useOfflineDetection'
 
-// Debug Components (Development Only)
-import AuthStatus from './components/debug/AuthStatus.jsx'
-import MockAuthControls from './components/debug/MockAuthControls.jsx'
+// Startup initialization
+import './utils/startup.js'
+
+// Removed debug components for production
 
 // Lazy-loaded components for code splitting
 // Auth Pages
@@ -62,63 +64,59 @@ function App() {
   return (
     <ErrorBoundary userId={user?.id}>
       <Router>
-        {/* Debug Components - Only show in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <>
-            <AuthStatus />
-            <MockAuthControls dispatch={dispatch} />
-          </>
-        )}
-        
-        <AnimatePresence mode="wait">
-          <Suspense fallback={<PageLoadingFallback />}>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={
-                <AuthGuard requireAuth={false}>
-                  <Login />
-                </AuthGuard>
-              } />
-              <Route path="/signup" element={
-                <AuthGuard requireAuth={false}>
-                  <Signup />
-                </AuthGuard>
-              } />
+        <AuthErrorBoundary>
+          {/* Debug components removed for production */}
+          
+          <AnimatePresence mode="wait">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={
+                  <AuthGuard requireAuth={false}>
+                    <Login />
+                  </AuthGuard>
+                } />
+                <Route path="/signup" element={
+                  <AuthGuard requireAuth={false}>
+                    <Signup />
+                  </AuthGuard>
+                } />
 
-              {/* Protected Routes with Main Layout */}
-              <Route path="/" element={
-                <AuthGuard requireAuth={true}>
-                  <Layout />
-                </AuthGuard>
-              }>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="profile/setup" element={<ProfileSetup />} />
-                <Route path="resume-upload" element={<ResumeUpload />} />
-                <Route path="resume-analysis/:resumeId" element={<ResumeAnalysis />} />
-                <Route path="interview/setup" element={<InterviewSetup />} />
-                <Route path="interview/live/:sessionId" element={<LiveInterview />} />
-                <Route path="interview/report/:sessionId" element={<FeedbackReport />} />
-                <Route path="library" element={<QuestionLibrary />} />
-              </Route>
+                {/* Protected Routes with Main Layout */}
+                <Route path="/" element={
+                  <AuthGuard requireAuth={true}>
+                    <Layout />
+                  </AuthGuard>
+                }>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="profile/setup" element={<ProfileSetup />} />
+                  <Route path="resume-upload" element={<ResumeUpload />} />
+                  <Route path="resume-analysis/:resumeId" element={<ResumeAnalysis />} />
+                  <Route path="interview/setup" element={<InterviewSetup />} />
+                  <Route path="interview/live/:sessionId" element={<LiveInterview />} />
+                  <Route path="interview/report/:sessionId" element={<FeedbackReport />} />
+                  <Route path="library" element={<QuestionLibrary />} />
+                </Route>
 
-              {/* Admin Routes with Admin Layout */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="questions" element={<QuestionManagement />} />
-                <Route path="settings" element={<div>Admin Settings - Coming Soon</div>} />
-              </Route>
+                {/* Admin Routes with Admin Layout */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="users" element={<UserManagement />} />
+                  <Route path="questions" element={<QuestionManagement />} />
+                  <Route path="settings" element={<div>Admin Settings - Coming Soon</div>} />
+                </Route>
 
-              {/* 404 Page */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </AnimatePresence>
-        
-        {/* Global Notification System */}
-        <NotificationSystem />
+                {/* 404 Page */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AnimatePresence>
+          
+          {/* Global Notification System */}
+          <NotificationSystem />
+        </AuthErrorBoundary>
       </Router>
     </ErrorBoundary>
   )

@@ -55,12 +55,38 @@ const createTestStore = (initialState = {}) => {
     },
     preloadedState: {
       interview: {
+        // Session management
         currentSession: null,
+        sessionHistory: [],
+        
+        // Question and interaction management
         currentQuestion: null,
+        questionHistory: [],
         interactions: [],
+        currentInteractionIndex: 0,
+        
+        // Speech recognition state
         isRecording: false,
+        speechRecognitionSupported: false,
+        microphonePermission: null,
+        speechError: null,
+        currentTranscript: '',
+        finalTranscript: '',
+        
+        // UI state
         loading: false,
+        questionLoading: false,
+        savingInteraction: false,
         error: null,
+        
+        // Interview flow state
+        interviewStarted: false,
+        interviewPaused: false,
+        interviewCompleted: false,
+        
+        // Settings
+        useVoiceInput: true,
+        autoAdvanceQuestions: false,
         ...initialState
       }
     }
@@ -104,7 +130,9 @@ describe('Interview Slice', () => {
       store.dispatch(endSession(mockCompletedSession))
       
       const state = store.getState().interview
-      expect(state.currentSession).toEqual(mockCompletedSession)
+      expect(state.currentSession).toBe(null)
+      expect(state.sessionHistory).toHaveLength(1)
+      expect(state.sessionHistory[0]).toEqual({ ...mockSession, ...mockCompletedSession })
       expect(state.isRecording).toBe(false)
     })
 
@@ -385,7 +413,10 @@ describe('Interview Slice', () => {
       
       // End session
       store.dispatch(endSession(mockCompletedSession))
-      expect(store.getState().interview.currentSession.status).toBe('completed')
+      const finalState = store.getState().interview
+      expect(finalState.currentSession).toBe(null)
+      expect(finalState.sessionHistory).toHaveLength(1)
+      expect(finalState.sessionHistory[0].status).toBe('completed')
     })
 
     it('should handle error recovery', () => {
