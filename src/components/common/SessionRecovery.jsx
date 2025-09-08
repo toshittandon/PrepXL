@@ -26,7 +26,7 @@ const SessionRecovery = ({
 
   // Auto-retry logic
   useEffect(() => {
-    if (!isVisible || !autoRetry || recoveryAttempts >= 3) return
+    if (!isVisible || !autoRetry || recoveryAttempts >= 3 || recoveryStatus === 'exhausted') return
 
     const timer = setInterval(() => {
       setAutoRetryCountdown(prev => {
@@ -39,7 +39,7 @@ const SessionRecovery = ({
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [isVisible, autoRetry, recoveryAttempts])
+  }, [isVisible, autoRetry, recoveryAttempts, recoveryStatus])
 
   const handleRecoveryAttempt = async () => {
     if (isRecovering) return
@@ -49,6 +49,23 @@ const SessionRecovery = ({
     setRecoveryStatus('attempting')
 
     try {
+      // First check if we already have a valid session without making API calls
+      const validityCheck = await checkSessionValidity()
+      
+      if (validityCheck.valid) {
+        // Session is already valid, no need to recover
+        setRecoveryStatus('success')
+        
+        if (onRecovered) {
+          onRecovered(validityCheck)
+        }
+        
+        setTimeout(() => {
+          onClose()
+        }, 1500)
+        return
+      }
+
       // Clear any stale auth data first - use setTimeout to avoid React warning
       setTimeout(() => {
         dispatch(logout())
@@ -61,29 +78,31 @@ const SessionRecovery = ({
       // Wait a moment for cleanup
       await new Promise(resolve => setTimeout(resolve, 800))
       
-      // Try to get fresh session data
-      const { getCurrentUserWithProfile, getCurrentSession } = await import('../../services/appwrite/auth.js')
-      
-      const user = await getCurrentUserWithProfile()
-      const session = await getCurrentSession()
-      
-      if (user && session) {
-        // Session recovery successful - use setTimeout to avoid React warning
-        setTimeout(() => {
-          dispatch(setUser(user))
-          dispatch(setSession(session))
-        }, 0)
+      // Try to refresh and validate the session
+      try {
+        const refreshedSession = await refreshAndValidateSession()
         
-        setRecoveryStatus('success')
-        
-        if (onRecovered) {
-          onRecovered({ user, session, valid: true })
+        if (refreshedSession.valid) {
+          // Session recovery successful - use setTimeout to avoid React warning
+          setTimeout(() => {
+            dispatch(setUser(refreshedSession.user))
+            dispatch(setSession(refreshedSession.session))
+          }, 0)
+          
+          setRecoveryStatus('success')
+          
+          if (onRecovered) {
+            onRecovered(refreshedSession)
+          }
+          
+          setTimeout(() => {
+            onClose()
+          }, 1500)
+          return
         }
-        
-        setTimeout(() => {
-          onClose()
-        }, 1500)
-        return
+      } catch (refreshError) {
+        // If refresh fails, the session is definitely invalid
+        throw new Error('Unable to recover session - please log in again')
       }
       
       throw new Error('No valid session found')
@@ -92,9 +111,15 @@ const SessionRecovery = ({
       console.error('Session recovery failed:', error)
       setRecoveryStatus('failed')
       
-      // If we've tried multiple times, give up on auto-retry
-      if (recoveryAttempts >= 2) {
+      // If it's a 401 error or no session, don't retry - redirect to login instead
+      if (error.code === 401 || error.message.includes('No valid session found') || recoveryAttempts >= 2) {
         setRecoveryStatus('exhausted')
+        // Auto-redirect to login after a short delay if no manual options shown
+        if (!showManualOptions) {
+          setTimeout(() => {
+            handleManualLogin()
+          }, 2000)
+        }
       }
     } finally {
       setIsRecovering(false)

@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ _command, mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '')
   
@@ -201,9 +201,12 @@ export default defineConfig(({ command, mode }) => {
       poolOptions: {
         threads: {
           singleThread: true, // Run tests in single thread to avoid conflicts
+          maxThreads: 1, // Limit to 1 thread to prevent memory issues
+          minThreads: 1,
         }
       },
-      maxConcurrency: 5, // Limit concurrent tests
+      maxConcurrency: 1, // Limit concurrent tests to prevent memory issues
+      isolate: false, // Share context between tests to reduce memory usage
     },
   }
 })

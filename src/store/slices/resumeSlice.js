@@ -38,21 +38,25 @@ export const uploadResume = createAsyncThunk(
       })
       
       // Always validate session before upload, regardless of Redux state
-      const { getCurrentSession, getCurrentUserWithProfile } = await import('../../services/appwrite/auth.js')
-      
-      let validSession = null
-      let validUser = null
+      const { checkSessionValidity } = await import('../../utils/sessionValidator.js')
       
       try {
         console.log('Validating current session with Appwrite...')
-        validSession = await getCurrentSession()
-        validUser = await getCurrentUserWithProfile()
+        const sessionData = await checkSessionValidity()
+        
+        if (!sessionData.valid) {
+          throw new Error('No valid session found')
+        }
         
         console.log('Session validation result:', {
-          hasValidSession: !!validSession,
-          hasValidUser: !!validUser,
-          validUserId: validUser?.id || validUser?.$id
+          hasValidSession: !!sessionData.session,
+          hasValidUser: !!sessionData.user,
+          validUserId: sessionData.userId
         })
+        
+        // Use validated session data
+        const validSession = sessionData.session
+        const validUser = sessionData.user
       } catch (sessionError) {
         console.error('Session validation failed:', sessionError)
         

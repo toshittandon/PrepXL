@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { Suspense, lazy } from 'react'
 
 // Error Handling Components
@@ -55,7 +55,6 @@ const PageLoadingFallback = () => (
 )
 
 function App() {
-  const dispatch = useDispatch()
   const user = useSelector(state => state.auth.user)
   
   // Initialize offline detection

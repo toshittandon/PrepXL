@@ -56,6 +56,12 @@ Object.defineProperty(window, 'location', {
   writable: true
 })
 
+// Mock window.dispatchEvent for error handling
+Object.defineProperty(window, 'dispatchEvent', {
+  value: vi.fn(),
+  writable: true
+})
+
 // Mock navigator
 Object.defineProperty(navigator, 'userAgent', {
   value: 'Mozilla/5.0 (Test Environment)',

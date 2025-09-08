@@ -3,10 +3,7 @@ import { motion } from 'framer-motion'
 import { 
   Trash2, 
   X, 
-  Download, 
-  Upload,
-  Archive,
-  Tag,
+  Download,
   AlertTriangle
 } from 'lucide-react'
 import Button from '../common/Button.jsx'

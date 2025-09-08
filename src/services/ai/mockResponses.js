@@ -314,37 +314,42 @@ export const simulateApiError = (errorRate = 0.1, errorTypes = ['network', 'serv
   const errorType = errorTypes[Math.floor(Math.random() * errorTypes.length)];
   
   switch (errorType) {
-    case 'network':
+    case 'network': {
       const networkError = new Error('Network error. Please check your internet connection.');
       networkError.code = 0;
       networkError.type = 'network_error';
       return networkError;
+    }
       
-    case 'server':
+    case 'server': {
       const serverError = new Error('Internal server error. Please try again later.');
       serverError.code = 500;
       serverError.type = 'server_error';
       return serverError;
+    }
       
-    case 'rate_limit':
+    case 'rate_limit': {
       const rateLimitError = new Error('Rate limit exceeded. Please wait before making another request.');
       rateLimitError.code = 429;
       rateLimitError.type = 'rate_limit_exceeded';
       // Use shorter reset time in test mode to avoid test timeouts
       rateLimitError.resetTime = testMode ? 1000 : 60000; // 1 second in test mode, 1 minute otherwise
       return rateLimitError;
+    }
       
-    case 'timeout':
+    case 'timeout': {
       const timeoutError = new Error('Request timeout. The service is taking too long to respond.');
       timeoutError.code = 408;
       timeoutError.type = 'timeout';
       return timeoutError;
+    }
       
-    default:
+    default: {
       const unknownError = new Error('An unexpected error occurred.');
       unknownError.code = 500;
       unknownError.type = 'unknown_error';
       return unknownError;
+    }
   }
 };
 

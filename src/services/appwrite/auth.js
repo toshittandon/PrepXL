@@ -229,12 +229,16 @@ export const signInWithOAuth = async (provider, successUrl, failureUrl) => {
  * Get current user session
  * @returns {Promise<Object|null>} Current session or null
  */
+/**
+ * Get current session
+ * @returns {Promise<Object|null>} Current session or null
+ */
 export const getCurrentSession = async () => {
   try {
     const session = await account.getSession('current')
     return session
   } catch (error) {
-    // Return null if no session exists (user not logged in)
+    // Return null if no session exists (user not logged in) - don't log as error
     if (error.code === 401) {
       return null
     }
@@ -251,7 +255,7 @@ export const getCurrentUser = async () => {
     const user = await account.get()
     return user
   } catch (error) {
-    // Return null if no user is logged in
+    // Return null if no user is logged in - don't log as error
     if (error.code === 401) {
       return null
     }

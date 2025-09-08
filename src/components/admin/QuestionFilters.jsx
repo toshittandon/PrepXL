@@ -30,7 +30,6 @@ const QuestionFilters = () => {
   const searchTerm = useSelector(selectSearchTerm)
   const selectedCategory = useSelector(selectSelectedCategory)
   const selectedRole = useSelector(selectSelectedRole)
-  const categories = useSelector(selectCategories)
   const roles = useSelector(selectRoles)
   const hasActiveFilters = useSelector(selectHasActiveFilters)
 

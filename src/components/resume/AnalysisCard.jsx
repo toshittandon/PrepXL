@@ -59,7 +59,7 @@ const AnalysisCard = ({
     }
 
     switch (type) {
-      case 'keywords':
+      case 'keywords': {
         if (!Array.isArray(data) || data.length === 0) {
           return (
             <div className="text-green-600 dark:text-green-400 text-sm font-medium">
@@ -108,8 +108,9 @@ const AnalysisCard = ({
             </div>
           </div>
         )
+      }
 
-      case 'suggestions':
+      case 'suggestions': {
         if (!Array.isArray(data) || data.length === 0) {
           return (
             <div className="text-green-600 dark:text-green-400 text-sm font-medium">
@@ -155,9 +156,10 @@ const AnalysisCard = ({
             )}
           </div>
         )
+      }
 
       case 'text':
-      default:
+      default: {
         if (typeof data !== 'string' || data.trim() === '') {
           return (
             <div className="text-gray-500 dark:text-gray-400 text-sm italic">
@@ -191,6 +193,7 @@ const AnalysisCard = ({
             )}
           </div>
         )
+      }
     }
   }
 

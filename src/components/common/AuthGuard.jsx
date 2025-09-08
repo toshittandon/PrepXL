@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Navigate, useLocation } from 'react-router-dom'
 import { getCurrentUserWithProfile } from '../../services/appwrite/auth.js'
+import { checkSessionValidity } from '../../utils/sessionValidator.js'
 import { setUser, setSession, setLoading } from '../../store/slices/authSlice.js'
 import LoadingSpinner from './LoadingSpinner.jsx'
 
@@ -26,16 +27,12 @@ const AuthGuard = ({
       try {
         dispatch(setLoading(true))
         
-        // Check if user has an active session
-        const userWithProfile = await getCurrentUserWithProfile()
+        // Use session validation instead of direct auth calls
+        const sessionData = await checkSessionValidity()
         
-        if (userWithProfile) {
-          dispatch(setUser(userWithProfile))
-          
-          // Get session data
-          const { getCurrentSession } = await import('../../services/appwrite/auth.js')
-          const session = await getCurrentSession()
-          dispatch(setSession(session))
+        if (sessionData.valid) {
+          dispatch(setUser(sessionData.user))
+          dispatch(setSession(sessionData.session))
         }
       } catch (error) {
         // Clear any stale user data on authentication errors

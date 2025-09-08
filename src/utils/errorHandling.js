@@ -291,6 +291,16 @@ export const getRecoveryStrategy = (errorType, context = {}) => {
  * @param {Object} context - Additional context
  */
 export const logError = (error, context = {}) => {
+  // Don't log expected 401 errors during session checks
+  if (error.code === 401 && (
+    context.operation === 'session_check' || 
+    context.operation === 'getCurrentUser' || 
+    context.operation === 'getCurrentSession' ||
+    context.suppressAuth401
+  )) {
+    return; // Silently ignore expected authentication failures
+  }
+
   const errorInfo = {
     message: error.message,
     stack: error.stack,
