@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { copyFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve } from 'path'
+import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ _command, mode }) => {
@@ -53,9 +54,16 @@ export default defineConfig(({ _command, mode }) => {
 
   return {
     plugins: [react(), pdfWorkerPlugin()],
+    root: process.cwd(),
+    base: '/',
     server: {
       port: 3000,
       open: true
+    },
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
     },
     build: {
       outDir: 'dist',
