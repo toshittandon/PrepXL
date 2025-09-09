@@ -56,6 +56,7 @@ export default defineConfig(({ _command, mode }) => {
     plugins: [react(), pdfWorkerPlugin()],
     root: process.cwd(),
     base: '/',
+    publicDir: 'public',
     server: {
       port: 3000,
       open: true
