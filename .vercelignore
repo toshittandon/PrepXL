@@ -1,0 +1,29 @@
+# Source files (only dist should be deployed)
+src/
+scripts/
+cypress/
+test/
+docs/
+
+# Development files
+*.log
+.env.*
+!.env.production
+.vscode/
+.idea/
+
+# Dependencies and temp files
+node_modules/
+.cache/
+.temp/
+
+# Build configs (not needed for deployment)
+vite.config.js
+tailwind.config.js
+postcss.config.js
+cypress.config.js
+
+# Documentation
+README.md
+LICENSE
+*.md
