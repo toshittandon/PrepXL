@@ -1,0 +1,197 @@
+[
+  {
+    "score": 40,
+    "grade": "F",
+    "bundleAnalysis": {
+      "totalSize": 3256197,
+      "jsSize": 3160061,
+      "cssSize": 66716,
+      "assetSize": 27483,
+      "fileCount": 23,
+      "jsFiles": [
+        {
+          "path": "pdf.worker.min.js",
+          "size": 1037158,
+          "sizeKB": "1012.85"
+        },
+        {
+          "path": "js/chunk-DxZbJXzd.js",
+          "size": 525723,
+          "sizeKB": "513.40"
+        },
+        {
+          "path": "js/chunk-nX0X7Trv.js",
+          "size": 498043,
+          "sizeKB": "486.37"
+        },
+        {
+          "path": "js/chunk-B5eQOpvY.js",
+          "size": 286388,
+          "sizeKB": "279.68"
+        },
+        {
+          "path": "js/chunk-DdcAOL53.js",
+          "size": 219203,
+          "sizeKB": "214.07"
+        },
+        {
+          "path": "js/chunk-B_5Yt_EI.js",
+          "size": 119434,
+          "sizeKB": "116.63"
+        },
+        {
+          "path": "js/chunk-CLutRVxi.js",
+          "size": 81595,
+          "sizeKB": "79.68"
+        },
+        {
+          "path": "js/chunk-B-uCGget.js",
+          "size": 77467,
+          "sizeKB": "75.65"
+        },
+        {
+          "path": "js/chunk-D34IMuIH.js",
+          "size": 59597,
+          "sizeKB": "58.20"
+        },
+        {
+          "path": "js/chunk-BjNIpoh9.js",
+          "size": 50524,
+          "sizeKB": "49.34"
+        },
+        {
+          "path": "js/chunk-4BB-e1g2.js",
+          "size": 49622,
+          "sizeKB": "48.46"
+        },
+        {
+          "path": "js/chunk-Byo42Lg4.js",
+          "size": 38931,
+          "sizeKB": "38.02"
+        },
+        {
+          "path": "js/chunk-DY5JENg3.js",
+          "size": 35729,
+          "sizeKB": "34.89"
+        },
+        {
+          "path": "assets/index-Df3-ya7x.js",
+          "size": 29980,
+          "sizeKB": "29.28"
+        },
+        {
+          "path": "js/Dashboard.jsx-Cc_U3aAA.js",
+          "size": 25103,
+          "sizeKB": "24.51"
+        },
+        {
+          "path": "js/chunk-Bg2sVuMC.js",
+          "size": 22977,
+          "sizeKB": "22.44"
+        },
+        {
+          "path": "js/NotFound.jsx-DBSd1_Hn.js",
+          "size": 2587,
+          "sizeKB": "2.53"
+        }
+      ],
+      "cssFiles": [
+        {
+          "path": "css/index-Llwyehb3.css",
+          "size": 66716,
+          "sizeKB": "65.15"
+        }
+      ],
+      "assetFiles": [
+        {
+          "path": "images/logomark-BGF5KTRr.svg",
+          "size": 24284,
+          "sizeKB": "23.71"
+        },
+        {
+          "path": "vite.svg",
+          "size": 1497,
+          "sizeKB": "1.46"
+        },
+        {
+          "path": "prepxl-logo.svg",
+          "size": 863,
+          "sizeKB": "0.84"
+        },
+        {
+          "path": "prepxl-logo-small.svg",
+          "size": 839,
+          "sizeKB": "0.82"
+        }
+      ],
+      "chunkCount": 16
+    },
+    "artifactAnalysis": {
+      "hasIndex": true,
+      "hasAssets": true,
+      "hasSourceMaps": false,
+      "hasManifest": false,
+      "structure": {
+        "assets": {
+          "isDirectory": true,
+          "size": 29980
+        },
+        "css": {
+          "isDirectory": true,
+          "size": 66716
+        },
+        "images": {
+          "isDirectory": true,
+          "size": 24284
+        },
+        "index.html": {
+          "isDirectory": false,
+          "size": 1937
+        },
+        "js": {
+          "isDirectory": true,
+          "size": 2092923
+        },
+        "pdf.worker.min.js": {
+          "isDirectory": false,
+          "size": 1037158
+        },
+        "prepxl-logo-small.svg": {
+          "isDirectory": false,
+          "size": 839
+        },
+        "prepxl-logo.svg": {
+          "isDirectory": false,
+          "size": 863
+        },
+        "vite.svg": {
+          "isDirectory": false,
+          "size": 1497
+        }
+      }
+    },
+    "issues": [
+      {
+        "type": "bundle-size",
+        "severity": "high",
+        "message": "Bundle size exceeds 1MB"
+      },
+      {
+        "type": "large-files",
+        "severity": "high",
+        "message": "2 JavaScript files exceed 500KB"
+      },
+      {
+        "type": "chunk-count",
+        "severity": "medium",
+        "message": "Too many chunks detected"
+      }
+    ],
+    "recommendations": [
+      "Implement aggressive code splitting and lazy loading",
+      "Split large JavaScript files into smaller chunks",
+      "Consolidate smaller chunks for better performance"
+    ],
+    "timestamp": "2025-09-10T10:32:08.268Z"
+  }
+]
